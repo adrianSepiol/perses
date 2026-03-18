@@ -11,27 +11,57 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { Card, CardProps } from '@mui/material';
-import { ReactElement } from 'react';
+import { Card, CardProps, Stack, ToggleButton, ToggleButtonGroup, Tooltip } from '@mui/material';
+import FileTreeOutlineIcon from 'mdi-material-ui/FileTreeOutline';
+import ViewListOutlineIcon from 'mdi-material-ui/ViewListOutline';
+import { ReactElement, useState } from 'react';
 import { useDashboardList } from '../../../model/dashboard-client';
 import { DashboardList } from '../../../components/DashboardList/DashboardList';
 import { useIsEphemeralDashboardEnabled } from '../../../context/Config';
+import { useFolderList } from '../../../model/folder-client';
 
 interface ProjectDashboardsProps extends CardProps {
   projectName: string;
   hideToolbar?: boolean;
 }
-
 export function ProjectDashboards({ projectName, hideToolbar, ...props }: ProjectDashboardsProps): ReactElement {
+  const [viewMode, setViewMode] = useState<'flat' | 'tree'>('flat');
   const { data, isLoading } = useDashboardList({ project: projectName });
+  const { data: folderList, isLoading: isLoadingFolderList } = useFolderList({
+    project: projectName,
+    enabled: viewMode === 'tree',
+  });
   const isEphemeralDashboardEnabled = useIsEphemeralDashboardEnabled();
 
   return (
     <Card {...props}>
+      <Stack direction="row" justifyContent="flex-end">
+        <ToggleButtonGroup
+          size="small"
+          exclusive
+          value={viewMode}
+          onChange={(_, newMode: 'flat' | 'tree' | null) => {
+            if (newMode !== null) setViewMode(newMode);
+          }}
+          aria-label="dashboard view mode"
+        >
+          <ToggleButton value="flat" aria-label="flat view">
+            <Tooltip title="Flat view">
+              <ViewListOutlineIcon fontSize="small" />
+            </Tooltip>
+          </ToggleButton>
+          <ToggleButton value="tree" aria-label="tree view">
+            <Tooltip title="Tree view">
+              <FileTreeOutlineIcon fontSize="small" />
+            </Tooltip>
+          </ToggleButton>
+        </ToggleButtonGroup>
+      </Stack>
       <DashboardList
         dashboardList={data ?? []}
+        folderList={folderList ?? []}
         hideToolbar={hideToolbar}
-        isLoading={isLoading}
+        isLoading={isLoading || (isLoadingFolderList && viewMode === 'tree')}
         initialState={{
           columns: {
             columnVisibilityModel: {
@@ -42,6 +72,7 @@ export function ProjectDashboards({ projectName, hideToolbar, ...props }: Projec
           },
         }}
         isEphemeralDashboardEnabled={isEphemeralDashboardEnabled}
+        viewMode={viewMode}
       />
     </Card>
   );

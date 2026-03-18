@@ -1,0 +1,531 @@
+// Copyright The Perses Authors
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+import { DashboardResource, FolderResource } from '@perses-dev/core';
+import { buildTableRows } from './tableUtils';
+
+describe('buildTableRows – no folders', () => {
+  it('returns an empty array when both inputs are empty', () => {
+    expect(buildTableRows([], new Map())).toEqual([]);
+  });
+
+  it('returns one flat row per dashboard when there are no folders', () => {
+    const dashA: DashboardResource = {
+      kind: 'Dashboard',
+      metadata: {
+        name: 'dash-a',
+        project: 'myproject',
+        createdAt: '2024-01-01T00:00:00Z',
+        updatedAt: '2024-06-01T00:00:00Z',
+        version: 1,
+      },
+      spec: { duration: '1h', variables: [], layouts: [], panels: {} },
+    };
+    const dashB: DashboardResource = {
+      kind: 'Dashboard',
+      metadata: {
+        name: 'dash-b',
+        project: 'myproject',
+        createdAt: '2024-01-01T00:00:00Z',
+        updatedAt: '2024-06-01T00:00:00Z',
+        version: 1,
+      },
+      spec: { duration: '1h', variables: [], layouts: [], panels: {} },
+    };
+    const map = new Map([
+      [
+        'myproject',
+        new Map([
+          ['dash-a', dashA],
+          ['dash-b', dashB],
+        ]),
+      ],
+    ]);
+
+    const rows = buildTableRows([], map);
+
+    expect(rows).toHaveLength(2);
+    expect(rows.map((r) => r.name)).toEqual(expect.arrayContaining(['dash-a', 'dash-b']));
+  });
+
+  it('sets path to "/" for loose dashboards', () => {
+    const dash: DashboardResource = {
+      kind: 'Dashboard',
+      metadata: {
+        name: 'dash-a',
+        project: 'p',
+        createdAt: '2024-01-01T00:00:00Z',
+        updatedAt: '2024-06-01T00:00:00Z',
+        version: 1,
+      },
+      spec: { duration: '1h', variables: [], layouts: [], panels: {} },
+    };
+    const map = new Map([['p', new Map([['dash-a', dash]])]]);
+
+    const rows = buildTableRows([], map);
+
+    expect(rows[0]!.path).toBe('/');
+  });
+
+  it('uses spec.display.name as displayName when present', () => {
+    const dash: DashboardResource = {
+      kind: 'Dashboard',
+      metadata: { name: 'dash-a', project: 'p', version: 1 },
+      spec: { duration: '1h', variables: [], layouts: [], panels: {}, display: { name: 'My Pretty Name' } },
+    };
+    const map = new Map([['p', new Map([['dash-a', dash]])]]);
+
+    const rows = buildTableRows([], map);
+
+    expect(rows[0]!.displayName).toBe('My Pretty Name');
+  });
+
+  it('falls back to metadata.name as displayName when display is absent', () => {
+    const dash: DashboardResource = {
+      kind: 'Dashboard',
+      metadata: { name: 'dash-a', project: 'p', version: 1 },
+      spec: { duration: '1h', variables: [], layouts: [], panels: {} },
+    };
+    const map = new Map([['p', new Map([['dash-a', dash]])]]);
+
+    const rows = buildTableRows([], map);
+
+    expect(rows[0]!.displayName).toBe('dash-a');
+  });
+
+  it('populates createdAt and updatedAt as Date objects', () => {
+    const dash: DashboardResource = {
+      kind: 'Dashboard',
+      metadata: {
+        name: 'dash-a',
+        project: 'p',
+        createdAt: '2024-01-01T00:00:00Z',
+        updatedAt: '2024-06-01T00:00:00Z',
+        version: 1,
+      },
+      spec: { duration: '1h', variables: [], layouts: [], panels: {} },
+    };
+    const map = new Map([['p', new Map([['dash-a', dash]])]]);
+
+    const rows = buildTableRows([], map);
+
+    expect(rows[0]!.createdAt).toBeInstanceOf(Date);
+    expect(rows[0]!.updatedAt).toBeInstanceOf(Date);
+    expect(rows[0]!.createdAt?.toISOString()).toBe('2024-01-01T00:00:00.000Z');
+  });
+
+  it('leaves createdAt / updatedAt undefined when metadata timestamps are absent', () => {
+    const dash: DashboardResource = {
+      kind: 'Dashboard',
+      metadata: { name: 'dash-a', project: 'p', version: 1 },
+      spec: { duration: '1h', variables: [], layouts: [], panels: {} },
+    };
+    const map = new Map([['p', new Map([['dash-a', dash]])]]);
+
+    const rows = buildTableRows([], map);
+
+    expect(rows[0]!.createdAt).toBeUndefined();
+    expect(rows[0]!.updatedAt).toBeUndefined();
+  });
+
+  it('carries tags and version from metadata', () => {
+    const dash: DashboardResource = {
+      kind: 'Dashboard',
+      metadata: { name: 'dash-a', project: 'p', version: 3, tags: ['tag1', 'tag2'] },
+      spec: { duration: '1h', variables: [], layouts: [], panels: {} },
+    };
+    const map = new Map([['p', new Map([['dash-a', dash]])]]);
+
+    const rows = buildTableRows([], map);
+
+    expect(rows[0]!.tags).toEqual(['tag1', 'tag2']);
+    expect(rows[0]!.version).toBe(3);
+  });
+
+  it('handles multiple projects independently', () => {
+    const dashX: DashboardResource = {
+      kind: 'Dashboard',
+      metadata: { name: 'dash-1', project: 'proj-x', version: 1 },
+      spec: { duration: '1h', variables: [], layouts: [], panels: {} },
+    };
+    const dashY: DashboardResource = {
+      kind: 'Dashboard',
+      metadata: { name: 'dash-2', project: 'proj-y', version: 1 },
+      spec: { duration: '1h', variables: [], layouts: [], panels: {} },
+    };
+    const map = new Map([
+      ['proj-x', new Map([['dash-1', dashX]])],
+      ['proj-y', new Map([['dash-2', dashY]])],
+    ]);
+
+    const rows = buildTableRows([], map);
+
+    expect(rows).toHaveLength(2);
+    expect(rows.map((r) => r.project)).toEqual(expect.arrayContaining(['proj-x', 'proj-y']));
+  });
+});
+
+describe('buildTableRows – flat folders', () => {
+  it('returns a single folder row that contains its dashboard children', () => {
+    const dashA: DashboardResource = {
+      kind: 'Dashboard',
+      metadata: { name: 'dash-a', project: 'p', version: 1 },
+      spec: { duration: '1h', variables: [], layouts: [], panels: {} },
+    };
+    const dashB: DashboardResource = {
+      kind: 'Dashboard',
+      metadata: { name: 'dash-b', project: 'p', version: 1 },
+      spec: { duration: '1h', variables: [], layouts: [], panels: {} },
+    };
+    const folder: FolderResource = {
+      kind: 'Folder',
+      metadata: { name: 'my-folder', project: 'p', version: 1 },
+      spec: [
+        { kind: 'Dashboard', name: 'dash-a' },
+        { kind: 'Dashboard', name: 'dash-b' },
+      ],
+    };
+    const map = new Map([
+      [
+        'p',
+        new Map([
+          ['dash-a', dashA],
+          ['dash-b', dashB],
+        ]),
+      ],
+    ]);
+
+    const rows = buildTableRows([folder], map);
+
+    expect(rows).toHaveLength(1);
+    expect(rows[0]!.kind).toBe('Folder');
+    expect(rows[0]!.children).toHaveLength(2);
+  });
+
+  it('sets the correct path on a folder row', () => {
+    const folder: FolderResource = {
+      kind: 'Folder',
+      metadata: { name: 'my-folder', project: 'p', version: 1 },
+      spec: [],
+    };
+
+    const rows = buildTableRows([folder], new Map());
+
+    expect(rows[0]!.path).toBe('/');
+  });
+
+  it('sets the correct path on dashboard children inside a folder', () => {
+    const dash: DashboardResource = {
+      kind: 'Dashboard',
+      metadata: { name: 'dash-a', project: 'p', version: 1 },
+      spec: { duration: '1h', variables: [], layouts: [], panels: {} },
+    };
+    const folder: FolderResource = {
+      kind: 'Folder',
+      metadata: { name: 'my-folder', project: 'p', version: 1 },
+      spec: [{ kind: 'Dashboard', name: 'dash-a' }],
+    };
+    const map = new Map([['p', new Map([['dash-a', dash]])]]);
+
+    const rows = buildTableRows([folder], map);
+
+    expect(rows[0]!.children![0]!.path).toBe('/my-folder/');
+  });
+
+  it('uses folder metadata.name as displayName when no display spec is set', () => {
+    const folder: FolderResource = {
+      kind: 'Folder',
+      metadata: { name: 'my-folder', project: 'p', version: 1 },
+      spec: [],
+    };
+
+    const rows = buildTableRows([folder], new Map());
+
+    expect(rows[0]!.displayName).toBe('my-folder');
+  });
+
+  it('dashboards not referenced by any folder appear as loose rows', () => {
+    const inFolder: DashboardResource = {
+      kind: 'Dashboard',
+      metadata: { name: 'in-folder', project: 'p', version: 1 },
+      spec: { duration: '1h', variables: [], layouts: [], panels: {} },
+    };
+    const loose: DashboardResource = {
+      kind: 'Dashboard',
+      metadata: { name: 'loose', project: 'p', version: 1 },
+      spec: { duration: '1h', variables: [], layouts: [], panels: {} },
+    };
+    const folder: FolderResource = {
+      kind: 'Folder',
+      metadata: { name: 'f', project: 'p', version: 1 },
+      spec: [{ kind: 'Dashboard', name: 'in-folder' }],
+    };
+    const map = new Map([
+      [
+        'p',
+        new Map([
+          ['in-folder', inFolder],
+          ['loose', loose],
+        ]),
+      ],
+    ]);
+
+    const rows = buildTableRows([folder], map);
+
+    expect(rows).toHaveLength(2);
+    expect(rows.map((r) => r.name)).toEqual(expect.arrayContaining(['f', 'loose']));
+  });
+
+  it('does not include a dashboard both inside a folder and as a loose row', () => {
+    const dash: DashboardResource = {
+      kind: 'Dashboard',
+      metadata: { name: 'dash-a', project: 'p', version: 1 },
+      spec: { duration: '1h', variables: [], layouts: [], panels: {} },
+    };
+    const folder: FolderResource = {
+      kind: 'Folder',
+      metadata: { name: 'f', project: 'p', version: 1 },
+      spec: [{ kind: 'Dashboard', name: 'dash-a' }],
+    };
+    const map = new Map([['p', new Map([['dash-a', dash]])]]);
+
+    const rows = buildTableRows([folder], map);
+
+    expect(rows).toHaveLength(1);
+    expect(rows[0]!.kind).toBe('Folder');
+  });
+
+  it('skips a Dashboard entry in folder spec when the dashboard is not in the map', () => {
+    const folder: FolderResource = {
+      kind: 'Folder',
+      metadata: { name: 'f', project: 'p', version: 1 },
+      spec: [{ kind: 'Dashboard', name: 'missing' }],
+    };
+
+    const rows = buildTableRows([folder], new Map());
+
+    expect(rows[0]!.children).toHaveLength(0);
+  });
+
+  it('a folder referencing no dashboards produces an empty children array', () => {
+    const folder: FolderResource = {
+      kind: 'Folder',
+      metadata: { name: 'empty-folder', project: 'p', version: 1 },
+      spec: [],
+    };
+
+    const rows = buildTableRows([folder], new Map());
+
+    expect(rows[0]!.children).toHaveLength(0);
+  });
+
+  it('carries folder version from metadata', () => {
+    const folder: FolderResource = {
+      kind: 'Folder',
+      metadata: { name: 'f', project: 'p', version: 7 },
+      spec: [],
+    };
+
+    const rows = buildTableRows([folder], new Map());
+
+    expect(rows[0]!.version).toBe(7);
+  });
+});
+
+// --- nested folders ----------------------------------------------------------
+
+describe('buildTableRows – nested folders', () => {
+  it('produces a two-level hierarchy', () => {
+    const dash: DashboardResource = {
+      kind: 'Dashboard',
+      metadata: { name: 'dash-a', project: 'p', version: 1 },
+      spec: { duration: '1h', variables: [], layouts: [], panels: {} },
+    };
+    const outer: FolderResource = {
+      kind: 'Folder',
+      metadata: { name: 'outer', project: 'p', version: 1 },
+      spec: [
+        {
+          kind: 'Folder',
+          name: 'inner',
+          spec: [{ kind: 'Dashboard', name: 'dash-a' }],
+        },
+      ],
+    };
+    const map = new Map([['p', new Map([['dash-a', dash]])]]);
+
+    const rows = buildTableRows([outer], map);
+
+    expect(rows).toHaveLength(1);
+    const outerRow = rows[0]!;
+    expect(outerRow.children).toHaveLength(1);
+    const innerRow = outerRow.children![0]!;
+    expect(innerRow.kind).toBe('Folder');
+    expect(innerRow.children).toHaveLength(1);
+    expect(innerRow.children![0]!.name).toBe('dash-a');
+  });
+
+  it('builds the correct path for deeply nested dashboards', () => {
+    const dash: DashboardResource = {
+      kind: 'Dashboard',
+      metadata: { name: 'dash-a', project: 'p', version: 1 },
+      spec: { duration: '1h', variables: [], layouts: [], panels: {} },
+    };
+    const top: FolderResource = {
+      kind: 'Folder',
+      metadata: { name: 'top', project: 'p', version: 1 },
+      spec: [
+        {
+          kind: 'Folder',
+          name: 'mid',
+          spec: [
+            {
+              kind: 'Folder',
+              name: 'deep',
+              spec: [{ kind: 'Dashboard', name: 'dash-a' }],
+            },
+          ],
+        },
+      ],
+    };
+    const map = new Map([['p', new Map([['dash-a', dash]])]]);
+
+    const rows = buildTableRows([top], map);
+
+    const dashRow = rows[0]!.children![0]!.children![0]!.children![0]!;
+    expect(dashRow.path).toBe('/top/mid/deep/');
+  });
+
+  it('a nested folder with no spec produces undefined children', () => {
+    const outer: FolderResource = {
+      kind: 'Folder',
+      metadata: { name: 'outer', project: 'p', version: 1 },
+      spec: [{ kind: 'Folder', name: 'inner' }],
+    };
+
+    const rows = buildTableRows([outer], new Map());
+
+    expect(rows[0]!.children![0]!.children).toBeUndefined();
+  });
+
+  it('throws on an unknown kind in folder spec', () => {
+    const folder: FolderResource = {
+      kind: 'Folder',
+      metadata: { name: 'f', project: 'p', version: 1 },
+      spec: [{ kind: 'Unknown', name: 'x' }] as unknown as FolderResource['spec'],
+    };
+
+    expect(() => buildTableRows([folder], new Map())).toThrow('Unknown kind: Unknown');
+  });
+});
+
+describe('buildTableRows – multiple projects', () => {
+  it('places dashboards in the correct project folder', () => {
+    const dashA: DashboardResource = {
+      kind: 'Dashboard',
+      metadata: { name: 'dash-1', project: 'proj-a', version: 1 },
+      spec: { duration: '1h', variables: [], layouts: [], panels: {} },
+    };
+    const dashB: DashboardResource = {
+      kind: 'Dashboard',
+      metadata: { name: 'dash-2', project: 'proj-b', version: 1 },
+      spec: { duration: '1h', variables: [], layouts: [], panels: {} },
+    };
+    const folderA: FolderResource = {
+      kind: 'Folder',
+      metadata: { name: 'f-a', project: 'proj-a', version: 1 },
+      spec: [{ kind: 'Dashboard', name: 'dash-1' }],
+    };
+    const folderB: FolderResource = {
+      kind: 'Folder',
+      metadata: { name: 'f-b', project: 'proj-b', version: 1 },
+      spec: [{ kind: 'Dashboard', name: 'dash-2' }],
+    };
+    const map = new Map([
+      ['proj-a', new Map([['dash-1', dashA]])],
+      ['proj-b', new Map([['dash-2', dashB]])],
+    ]);
+
+    const rows = buildTableRows([folderA, folderB], map);
+
+    expect(rows).toHaveLength(2);
+    const rowA = rows.find((r) => r.project === 'proj-a')!;
+    const rowB = rows.find((r) => r.project === 'proj-b')!;
+    expect(rowA.children![0]!.name).toBe('dash-1');
+    expect(rowB.children![0]!.name).toBe('dash-2');
+  });
+
+  it('does not leak dashboards between projects', () => {
+    const dashA: DashboardResource = {
+      kind: 'Dashboard',
+      metadata: { name: 'same-name', project: 'proj-a', version: 1 },
+      spec: { duration: '1h', variables: [], layouts: [], panels: {} },
+    };
+    const dashB: DashboardResource = {
+      kind: 'Dashboard',
+      metadata: { name: 'same-name', project: 'proj-b', version: 1 },
+      spec: { duration: '1h', variables: [], layouts: [], panels: {} },
+    };
+    const folderA: FolderResource = {
+      kind: 'Folder',
+      metadata: { name: 'f-a', project: 'proj-a', version: 1 },
+      spec: [{ kind: 'Dashboard', name: 'same-name' }],
+    };
+    const map = new Map([
+      ['proj-a', new Map([['same-name', dashA]])],
+      ['proj-b', new Map([['same-name', dashB]])],
+    ]);
+
+    const rows = buildTableRows([folderA], map);
+
+    expect(rows).toHaveLength(2);
+    const folderRow = rows.find((r) => r.kind === 'Folder')!;
+    expect(folderRow.project).toBe('proj-a');
+    const looseRow = rows.find((r) => r.kind === 'Dashboard')!;
+    expect(looseRow.project).toBe('proj-b');
+  });
+
+  it('emits an empty children list for a folder whose project has no dashboards in the map', () => {
+    const folder: FolderResource = {
+      kind: 'Folder',
+      metadata: { name: 'f', project: 'ghost-project', version: 1 },
+      spec: [{ kind: 'Dashboard', name: 'anything' }],
+    };
+
+    const rows = buildTableRows([folder], new Map());
+
+    expect(rows[0]!.children).toHaveLength(0);
+  });
+});
+
+describe('buildTableRows – idempotency', () => {
+  it('does not mutate the original dashboardsMap', () => {
+    const dash: DashboardResource & { inFolder?: boolean } = {
+      kind: 'Dashboard',
+      metadata: { name: 'dash-a', project: 'p', version: 1 },
+      spec: { duration: '1h', variables: [], layouts: [], panels: {} },
+    };
+    const folder: FolderResource = {
+      kind: 'Folder',
+      metadata: { name: 'f', project: 'p', version: 1 },
+      spec: [{ kind: 'Dashboard', name: 'dash-a' }],
+    };
+    const map = new Map([['p', new Map([['dash-a', dash]])]]);
+
+    buildTableRows([folder], map);
+
+    // The original object must not have been mutated (no inFolder property)
+    expect(map.get('p')?.get('dash-a')).toEqual(dash);
+    expect(map.get('p')?.get('dash-a')?.inFolder).toBeUndefined();
+  });
+});
