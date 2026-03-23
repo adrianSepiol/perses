@@ -21,7 +21,7 @@ import {
   UseQueryResult,
 } from '@tanstack/react-query';
 import buildURL from './url-builder';
-import { HTTPHeader, HTTPMethodDELETE, HTTPMethodGET, HTTPMethodPUT } from './http';
+import { HTTPHeader, HTTPMethodDELETE, HTTPMethodGET, HTTPMethodPOST, HTTPMethodPUT } from './http';
 
 export const resource: string = 'folders' as const;
 
@@ -48,6 +48,23 @@ export function useFolderList(options: FolderListOptions): UseQueryResult<Folder
       return getFolders(options.project, options.metadataOnly, name);
     },
     ...restOptions,
+  });
+}
+
+/**
+ * Returns a mutation that creates a folder and invalidates the folder list cache.
+ */
+export function useCreateFolderMutation(): UseMutationResult<FolderResource, StatusError, FolderResource> {
+  const queryClient = useQueryClient();
+
+  return useMutation<FolderResource, StatusError, FolderResource>({
+    mutationKey: [resource],
+    mutationFn: (folder) => {
+      return createFolder(folder);
+    },
+    onSuccess: () => {
+      return queryClient.invalidateQueries({ queryKey: [resource] });
+    },
   });
 }
 
@@ -81,10 +98,18 @@ export function useDeleteFolderMutation(): UseMutationResult<FolderResource, Sta
       return entity;
     },
     onSuccess: (entity: FolderResource) => {
-      console.log(entity);
       queryClient.removeQueries({ queryKey: [resource, entity.metadata.project, entity.metadata.name] });
       return queryClient.invalidateQueries({ queryKey: [resource] });
     },
+  });
+}
+
+function createFolder(entity: FolderResource): Promise<FolderResource> {
+  const url = buildURL({ resource: resource, project: entity.metadata.project });
+  return fetchJson<FolderResource>(url, {
+    method: HTTPMethodPOST,
+    headers: HTTPHeader,
+    body: JSON.stringify(entity),
   });
 }
 

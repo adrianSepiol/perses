@@ -25,4 +25,15 @@ export const editFolderDialogValidationSchema = z.object({
   name: z.string().min(1, 'Name is required'),
 });
 
+export const createFolderDialogValidationSchema = z.object({
+  selectedDashboards: z.array(
+    z.object({
+      name: z.string(),
+      label: z.string(),
+    })
+  ),
+  name: z.string().min(1, 'Name is required'),
+});
+
 export type EditFolderValidationType = z.infer<typeof editFolderDialogValidationSchema>;
+export type CreateFolderValidationType = z.infer<typeof createFolderDialogValidationSchema>;
