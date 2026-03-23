@@ -11,7 +11,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-export * from './dashboard';
-export * from './ephemeraldashboard';
-export * from './folder';
-export * from './project';
+import { z } from 'zod';
+
+export const editFolderDialogValidationSchema = z.object({
+  selectedDashboards: z
+    .array(
+      z.object({
+        name: z.string(),
+        label: z.string(),
+      })
+    )
+    .min(1, 'You must select at least one dashboard'),
+  name: z.string().min(1, 'Name is required'),
+});
+
+export type EditFolderValidationType = z.infer<typeof editFolderDialogValidationSchema>;

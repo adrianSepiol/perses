@@ -26,9 +26,42 @@ import { useSnackbar } from '@perses-dev/components';
 import { GridInitialStateCommunity } from '@mui/x-data-grid/models/gridStateCommunity';
 import { useDeleteDashboardMutation } from '../../model/dashboard-client';
 import { ListProperties } from '../list';
-import { CreateDashboardDialog, DeleteResourceDialog, EditDashboardDialog } from '../dialogs';
+import {
+  AddFolderDialog,
+  CreateDashboardDialog,
+  DeleteResourceDialog,
+  EditDashboardDialog,
+  EditFolderDialog,
+} from '../dialogs';
+import { DeleteFolderDialog } from '../dialogs/DeleteSubfolderDialog';
 import DashboardTreeList from './DashboardTreeList';
 import { DashboardFlatList } from './DashboardFlatList';
+
+type editDashboardAction = { type: 'editDashboard'; target: DashboardResource };
+type duplicateDashboardAction = { type: 'duplicateDashboard'; target: DashboardResource };
+type deleteDashboardAction = { type: 'deleteDashboard'; target: DashboardResource };
+type deleteFolderAction = { type: 'deleteFolder'; target: FolderResource; path: string[] };
+type editFolderAction = {
+  type: 'editFolder';
+  target: FolderResource;
+  availableDashboards: Map<string, DashboardResource>;
+  path: string[];
+};
+type addFolder = {
+  type: 'addFolder';
+  target: FolderResource;
+  availableDashboards: Map<string, DashboardResource>;
+  path: string[];
+};
+type openDialogAction =
+  | editDashboardAction
+  | duplicateDashboardAction
+  | deleteDashboardAction
+  | editFolderAction
+  | addFolder
+  | deleteFolderAction
+  | { type: 'none' };
+type openDialogActionType = openDialogAction['type'];
 
 export interface DashboardListProperties extends ListProperties {
   dashboardList: DashboardResource[];
@@ -47,8 +80,6 @@ export interface DashboardListProperties extends ListProperties {
  * @param props.isLoading Display a loading circle if enabled
  * @param props.isEphemeralDashboardEnabled Display switch button if ephemeral dashboards are enabled in copy dialog.
  */
-type ActiveDialog = 'rename' | 'duplicate' | 'delete' | null;
-
 export function DashboardList(props: DashboardListProperties): ReactElement {
   const navigate = useNavigate();
   const {
@@ -74,26 +105,72 @@ export function DashboardList(props: DashboardListProperties): ReactElement {
     return map;
   }, [dashboardList]);
 
-  const [targetedDashboard, setTargetedDashboard] = useState<DashboardResource>();
-  const [activeDialog, setActiveDialog] = useState<ActiveDialog>(null);
+  const [activeDialog, setActiveDialog] = useState<openDialogAction>({ type: 'none' });
 
   const openDialog = useCallback(
-    (dialog: ActiveDialog) => (project: string, name: string) => (): void => {
-      setTargetedDashboard(dashboardsMap.get(project)?.get(name));
-      setActiveDialog(dialog);
+    (dialog: openDialogActionType) => (project: string, name: string, path?: string[]) => (): void => {
+      switch (dialog) {
+        case 'editDashboard':
+        case 'duplicateDashboard':
+        case 'deleteDashboard': {
+          const dashboard = dashboardsMap.get(project)?.get(name);
+          if (dashboard) {
+            setActiveDialog({ type: dialog, target: dashboard });
+          }
+          break;
+        }
+        case 'editFolder': {
+          const target = folderList.find((folder) => folder.metadata.name === (path?.[0] ?? name));
+          if (target) {
+            setActiveDialog({
+              type: 'editFolder',
+              target,
+              availableDashboards: dashboardsMap.get(project) ?? new Map(),
+              path: [...(path ?? []), name].slice(1),
+            });
+          }
+          break;
+        }
+        case 'addFolder': {
+          const target = folderList.find((folder) => folder.metadata.name === (path?.[0] ?? name));
+          if (target) {
+            setActiveDialog({
+              type: 'addFolder',
+              target,
+              availableDashboards: dashboardsMap.get(project) ?? new Map(),
+              path: [...(path ?? []), name].slice(1),
+            });
+          }
+          break;
+        }
+        case 'deleteFolder': {
+          const target = folderList.find((folder) => folder.metadata.name === (path?.[0] ?? name));
+          if (!target) break;
+          setActiveDialog({
+            type: 'deleteFolder',
+            target: target,
+            path: [...(path ?? []), name].slice(1),
+          });
+          break;
+        }
+      }
     },
-    [dashboardsMap]
+    [dashboardsMap, folderList]
   );
 
-  const handleRenameButtonClick = openDialog('rename');
-  const handleDuplicateButtonClick = openDialog('duplicate');
-  const handleDeleteButtonClick = openDialog('delete');
+  const handleRenameButtonClick = openDialog('editDashboard');
+  const handleDuplicateButtonClick = openDialog('duplicateDashboard');
+  const handleDeleteButtonClick = openDialog('deleteDashboard');
+  const handleEditFolderButtonClick = openDialog('editFolder');
+  const handleAddFolderButtonClick = openDialog('addFolder');
+  const handleDeleteFolderButtonClick = openDialog('deleteFolder');
 
-  const closeDialog = useCallback(() => setActiveDialog(null), []);
+  const closeDialog = useCallback(() => setActiveDialog({ type: 'none' }), []);
 
   const handleDashboardDuplication = useCallback(
     (dashboardInfo: DashboardSelector | EphemeralDashboardInfo) => {
-      if (targetedDashboard) {
+      if (activeDialog.type === 'duplicateDashboard') {
+        const targetedDashboard = activeDialog.target;
         if ('ttl' in dashboardInfo) {
           navigate(`/projects/${targetedDashboard.metadata.project}/ephemeraldashboard/new`, {
             state: {
@@ -118,7 +195,7 @@ export function DashboardList(props: DashboardListProperties): ReactElement {
         }
       }
     },
-    [navigate, targetedDashboard]
+    [navigate, activeDialog]
   );
 
   const handleDashboardDelete = useCallback(
@@ -148,6 +225,9 @@ export function DashboardList(props: DashboardListProperties): ReactElement {
           handleRenameButtonClick={handleRenameButtonClick}
           handleDuplicateButtonClick={handleDuplicateButtonClick}
           handleDeleteButtonClick={handleDeleteButtonClick}
+          handleEditFolderButtonClick={handleEditFolderButtonClick}
+          handleAddFolderButtonClick={handleAddFolderButtonClick}
+          handleDeleteFolderButtonClick={handleDeleteFolderButtonClick}
           isLoading={isLoading}
           height={treeHeight}
         />
@@ -162,26 +242,60 @@ export function DashboardList(props: DashboardListProperties): ReactElement {
           isLoading={isLoading}
         />
       )}
-      {targetedDashboard && (
-        <>
-          <EditDashboardDialog open={activeDialog === 'rename'} dashboard={targetedDashboard} onClose={closeDialog} />
-          <CreateDashboardDialog
-            open={activeDialog === 'duplicate'}
-            projects={[{ kind: 'Project', metadata: { name: targetedDashboard.metadata.project }, spec: {} }]}
-            hideProjectSelect={true}
-            mode="duplicate"
-            name={getResourceDisplayName(targetedDashboard)}
-            onSuccess={handleDashboardDuplication}
-            onClose={closeDialog}
-            isEphemeralDashboardEnabled={isEphemeralDashboardEnabled}
-          />
-          <DeleteResourceDialog
-            open={activeDialog === 'delete'}
-            resource={targetedDashboard}
-            onSubmit={(v) => handleDashboardDelete(v).then(closeDialog)}
-            onClose={closeDialog}
-          />
-        </>
+      {activeDialog.type === 'editDashboard' && (
+        <EditDashboardDialog
+          open={activeDialog.type === 'editDashboard'}
+          dashboard={activeDialog.target}
+          onClose={closeDialog}
+        />
+      )}
+      {activeDialog.type === 'duplicateDashboard' && (
+        <CreateDashboardDialog
+          open={activeDialog.type === 'duplicateDashboard'}
+          projects={[{ kind: 'Project', metadata: { name: activeDialog.target.metadata.project }, spec: {} }]}
+          hideProjectSelect={true}
+          mode="duplicate"
+          name={getResourceDisplayName(activeDialog.target)}
+          onSuccess={handleDashboardDuplication}
+          onClose={closeDialog}
+          isEphemeralDashboardEnabled={isEphemeralDashboardEnabled}
+        />
+      )}
+      {activeDialog.type === 'deleteDashboard' && (
+        <DeleteResourceDialog
+          open={activeDialog.type === 'deleteDashboard'}
+          resource={activeDialog.target}
+          onSubmit={(v) => handleDashboardDelete(v).then(closeDialog)}
+          onClose={closeDialog}
+        />
+      )}
+      {activeDialog.type === 'editFolder' && (
+        <EditFolderDialog
+          open={true}
+          folder={activeDialog.target}
+          dashboards={activeDialog.availableDashboards}
+          path={activeDialog.path}
+          onClose={closeDialog}
+          onSuccess={closeDialog}
+        />
+      )}
+      {activeDialog.type === 'addFolder' && (
+        <AddFolderDialog
+          open={true}
+          folder={activeDialog.target}
+          dashboards={activeDialog.availableDashboards}
+          path={activeDialog.path}
+          onClose={closeDialog}
+          onSuccess={closeDialog}
+        />
+      )}
+      {activeDialog.type === 'deleteFolder' && (
+        <DeleteFolderDialog
+          open={activeDialog.type === 'deleteFolder'}
+          folder={activeDialog.target}
+          path={activeDialog.path}
+          onClose={closeDialog}
+        />
       )}
     </Stack>
   );

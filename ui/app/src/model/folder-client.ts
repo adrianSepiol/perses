@@ -12,9 +12,16 @@
 // limitations under the License.
 
 import { fetchJson, FolderResource, StatusError } from '@perses-dev/core';
-import { useQuery, UseQueryOptions, UseQueryResult } from '@tanstack/react-query';
+import {
+  useMutation,
+  UseMutationResult,
+  useQuery,
+  useQueryClient,
+  UseQueryOptions,
+  UseQueryResult,
+} from '@tanstack/react-query';
 import buildURL from './url-builder';
-import { HTTPHeader, HTTPMethodGET } from './http';
+import { HTTPHeader, HTTPMethodDELETE, HTTPMethodGET, HTTPMethodPUT } from './http';
 
 export const resource: string = 'folders' as const;
 
@@ -30,6 +37,9 @@ type FolderListOptions = Omit<UseQueryOptions<FolderResource[], StatusError>, 'q
   metadataOnly?: boolean;
 };
 
+/**
+ * Returns the list of folders, optionally filtered by project, name prefix, or metadata-only mode.
+ */
 export function useFolderList(options: FolderListOptions): UseQueryResult<FolderResource[], StatusError> {
   const { project, metadataOnly, name, ...restOptions } = options;
   return useQuery<FolderResource[], StatusError>({
@@ -40,7 +50,45 @@ export function useFolderList(options: FolderListOptions): UseQueryResult<Folder
     ...restOptions,
   });
 }
-export function getFolders(project?: string, metadataOnly: boolean = false, name?: string): Promise<FolderResource[]> {
+
+/**
+ * Returns a mutation that updates a folder and invalidates the folder list cache.
+ */
+export function useUpdateFolderMutation(): UseMutationResult<FolderResource, Error, FolderResource> {
+  const queryClient = useQueryClient();
+
+  return useMutation<FolderResource, Error, FolderResource>({
+    mutationKey: [resource],
+    mutationFn: (folder) => {
+      return updateFolder(folder);
+    },
+    onSuccess: () => {
+      return queryClient.invalidateQueries({ queryKey: [resource] });
+    },
+  });
+}
+
+/**
+ * Returns a mutation that deletes a folder and invalidates the folder list cache.
+ */
+export function useDeleteFolderMutation(): UseMutationResult<FolderResource, StatusError, FolderResource> {
+  const queryClient = useQueryClient();
+
+  return useMutation<FolderResource, StatusError, FolderResource>({
+    mutationKey: [resource],
+    mutationFn: async (entity: FolderResource) => {
+      await deleteFolder(entity);
+      return entity;
+    },
+    onSuccess: (entity: FolderResource) => {
+      console.log(entity);
+      queryClient.removeQueries({ queryKey: [resource, entity.metadata.project, entity.metadata.name] });
+      return queryClient.invalidateQueries({ queryKey: [resource] });
+    },
+  });
+}
+
+function getFolders(project?: string, metadataOnly: boolean = false, name?: string): Promise<FolderResource[]> {
   const queryParams = new URLSearchParams();
   if (metadataOnly) {
     queryParams.set('metadata_only', 'true');
@@ -51,6 +99,22 @@ export function getFolders(project?: string, metadataOnly: boolean = false, name
   const url = buildURL({ resource: resource, project: project, queryParams: queryParams });
   return fetchJson<FolderResource[]>(url, {
     method: HTTPMethodGET,
+    headers: HTTPHeader,
+  });
+}
+function updateFolder(entity: FolderResource): Promise<FolderResource> {
+  const url = buildURL({ resource: resource, project: entity.metadata.project, name: entity.metadata.name });
+  return fetchJson<FolderResource>(url, {
+    method: HTTPMethodPUT,
+    headers: HTTPHeader,
+    body: JSON.stringify(entity),
+  });
+}
+
+function deleteFolder(entity: FolderResource): Promise<Response> {
+  const url = buildURL({ resource: resource, project: entity.metadata.project, name: entity.metadata.name });
+  return fetch(url, {
+    method: HTTPMethodDELETE,
     headers: HTTPHeader,
   });
 }

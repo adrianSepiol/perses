@@ -21,6 +21,7 @@ import ChevronDownIcon from 'mdi-material-ui/ChevronDown';
 import ChevronRightIcon from 'mdi-material-ui/ChevronRight';
 import FolderOutlineIcon from 'mdi-material-ui/FolderOutline';
 import ViewDashboardOutlineIcon from 'mdi-material-ui/ViewDashboardOutline';
+import AddFolderOutlineIcon from 'mdi-material-ui/FolderPlusOutline';
 import { ReactElement, useMemo, useState } from 'react';
 import { CRUDIconButton } from '../CRUDButton/CRUDIconButton';
 import { buildTableRows, formatAbsoluteTime, formatRelativeTime } from '../../utils/tableUtils';
@@ -30,7 +31,7 @@ export interface DashboardTreeTableRow {
   name: string;
   displayName: string;
   project: string;
-  path: string;
+  path: string[];
   createdAt?: Date;
   updatedAt?: Date;
   tags?: string[];
@@ -44,6 +45,9 @@ export interface DashboardTreeTableProps {
   handleRenameButtonClick: (project: string, name: string) => () => void;
   handleDuplicateButtonClick: (project: string, name: string) => () => void;
   handleDeleteButtonClick: (project: string, name: string) => () => void;
+  handleEditFolderButtonClick: (project: string, name: string, path: string[]) => () => void;
+  handleAddFolderButtonClick: (project: string, name: string, path: string[]) => () => void;
+  handleDeleteFolderButtonClick: (project: string, name: string, path: string[]) => () => void;
   height: number;
   isLoading?: boolean;
 }
@@ -54,6 +58,9 @@ function DashboardTreeList({
   handleDeleteButtonClick,
   handleDuplicateButtonClick,
   handleRenameButtonClick,
+  handleEditFolderButtonClick,
+  handleAddFolderButtonClick,
+  handleDeleteFolderButtonClick,
   height,
   isLoading,
 }: DashboardTreeTableProps): ReactElement {
@@ -170,14 +177,58 @@ function DashboardTreeList({
               </Box>
             );
           }
+          if (row.original.kind === 'Folder') {
+            return (
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignContent: 'center' }}>
+                <CRUDIconButton
+                  key={row.original.name + '-edit'}
+                  label="Edit"
+                  action="update"
+                  scope="Dashboard"
+                  project={row.original.project}
+                  onClick={handleEditFolderButtonClick(row.original.project, row.original.name, row.original.path)}
+                >
+                  <PencilIcon />
+                </CRUDIconButton>
+                <CRUDIconButton
+                  key={row.original.name + '-add'}
+                  label="Add Folder"
+                  action="create"
+                  scope="Folder"
+                  project={row.original.project}
+                  onClick={handleAddFolderButtonClick(row.original.project, row.original.name, row.original.path)}
+                >
+                  <AddFolderOutlineIcon />
+                </CRUDIconButton>
+                <CRUDIconButton
+                  key={row.original.name + '-delete'}
+                  label="Delete"
+                  action="delete"
+                  scope="Folder"
+                  project={row.original.project}
+                  onClick={handleDeleteFolderButtonClick(row.original.project, row.original.name, row.original.path)}
+                >
+                  <DeleteIcon />
+                </CRUDIconButton>
+              </Box>
+            );
+          }
         },
       },
     ],
-    [handleDeleteButtonClick, handleDuplicateButtonClick, handleRenameButtonClick]
+    [
+      handleAddFolderButtonClick,
+      handleDeleteButtonClick,
+      handleDeleteFolderButtonClick,
+      handleDuplicateButtonClick,
+      handleEditFolderButtonClick,
+      handleRenameButtonClick,
+    ]
   );
 
   const [sorting, setSorting] = useState<TableSortingState>([{ id: 'name', desc: false }]);
   const [pagination, setPagination] = useState<TablePaginationState>({ pageIndex: 0, pageSize: 10 });
+
   if (isLoading) {
     return (
       <Box
@@ -197,7 +248,7 @@ function DashboardTreeList({
     <Table
       data={rows}
       columns={columns}
-      getRowId={(row) => `${row.project}/${row.path}/${row.name}/${row.kind}`}
+      getRowId={(row) => `${row.project}/${row.path.join('/')}/${row.name}/${row.kind}`}
       height={height}
       width="100%"
       sorting={sorting}

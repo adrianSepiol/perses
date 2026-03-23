@@ -58,7 +58,7 @@ describe('buildTableRows – no folders', () => {
     expect(rows.map((r) => r.name)).toEqual(expect.arrayContaining(['dash-a', 'dash-b']));
   });
 
-  it('sets path to "/" for loose dashboards', () => {
+  it('sets path to [] for loose dashboards', () => {
     const dash: DashboardResource = {
       kind: 'Dashboard',
       metadata: {
@@ -74,7 +74,7 @@ describe('buildTableRows – no folders', () => {
 
     const rows = buildTableRows([], map);
 
-    expect(rows[0]!.path).toBe('/');
+    expect(rows[0]!.path).toEqual([]);
   });
 
   it('uses spec.display.name as displayName when present', () => {
@@ -221,7 +221,7 @@ describe('buildTableRows – flat folders', () => {
 
     const rows = buildTableRows([folder], new Map());
 
-    expect(rows[0]!.path).toBe('/');
+    expect(rows[0]!.path).toEqual([]);
   });
 
   it('sets the correct path on dashboard children inside a folder', () => {
@@ -239,7 +239,7 @@ describe('buildTableRows – flat folders', () => {
 
     const rows = buildTableRows([folder], map);
 
-    expect(rows[0]!.children![0]!.path).toBe('/my-folder/');
+    expect(rows[0]!.children![0]!.path).toEqual(['my-folder']);
   });
 
   it('uses folder metadata.name as displayName when no display spec is set', () => {
@@ -403,7 +403,7 @@ describe('buildTableRows – nested folders', () => {
     const rows = buildTableRows([top], map);
 
     const dashRow = rows[0]!.children![0]!.children![0]!.children![0]!;
-    expect(dashRow.path).toBe('/top/mid/deep/');
+    expect(dashRow.path).toEqual(['top', 'mid', 'deep']);
   });
 
   it('a nested folder with no spec produces undefined children', () => {

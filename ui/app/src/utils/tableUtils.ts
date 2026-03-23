@@ -51,7 +51,7 @@ export const buildTableRows = (
   const items = [...dashboardsMapCopy.values()]
     .flatMap((map) => [...map.values()])
     .filter((dashboard) => !dashboard.inFolder)
-    .map((dashboard) => mapToTableRow(dashboard, '/'));
+    .map((dashboard) => mapToTableRow(dashboard, []));
   return tableRows.concat(items);
 };
 
@@ -66,13 +66,13 @@ const copyDashBoardsMap = (
   );
 };
 
-const mapToTableRow = (dashboardResource: DashboardResource, path: string): DashboardTreeTableRow => {
+const mapToTableRow = (dashboardResource: DashboardResource, path: string[]): DashboardTreeTableRow => {
   const createdAt = dashboardResource.metadata.createdAt;
   const updatedAt = dashboardResource.metadata.updatedAt;
   return {
     kind: 'Dashboard',
     name: dashboardResource.metadata.name,
-    displayName: dashboardResource.spec?.display?.name ?? dashboardResource.metadata.name,
+    displayName: getResourceDisplayName(dashboardResource),
     createdAt: createdAt ? new Date(createdAt) : undefined,
     updatedAt: updatedAt ? new Date(updatedAt) : undefined,
     tags: dashboardResource.metadata.tags,
@@ -89,7 +89,7 @@ const mapToTableData = (
   return folderList.map((folder) => {
     const project = folder.metadata.project;
     const map = dashboardMap.get(project) ?? new Map<string, DashboardResource>();
-    const rootPath = '/';
+    const rootPath: string[] = [];
     return {
       kind: folder.kind,
       name: folder.metadata.name,
@@ -107,7 +107,7 @@ const mapFolderSpecToTableRow = (
   folderSpec: FolderSpec[],
   dashboardMap: Map<string, DashboardResource & { inFolder?: boolean }>,
   project: string,
-  parentPath: string
+  parentPath: string[]
 ): DashboardTreeTableRow[] => {
   return folderSpec
     .map((item) => {
@@ -138,6 +138,6 @@ const mapFolderSpecToTableRow = (
     .filter((row): row is DashboardTreeTableRow => row !== undefined);
 };
 
-const buildPath = (parentPath: string, name: string): string => {
-  return `${parentPath}${name}/`;
+const buildPath = (parentPath: string[], name: string): string[] => {
+  return [...parentPath, name];
 };
