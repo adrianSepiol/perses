@@ -12,12 +12,12 @@
 // limitations under the License.
 
 import { Dispatch, DispatchWithoutAction, ReactElement, useMemo } from 'react';
-import { Autocomplete, Button, Chip, Stack, TextField } from '@mui/material';
+import { Autocomplete, Button, Chip, CircularProgress, Stack, TextField } from '@mui/material';
 import { Dialog, useSnackbar } from '@perses-dev/components';
 import { FolderResource, FolderSpec, getResourceDisplayName, getResourceExtendedDisplayName } from '@perses-dev/core';
 import { Controller, FormProvider, SubmitHandler, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { createFolderDialogValidationSchema, CreateFolderValidationType } from '../../validation';
+import { CreateFolderValidationType, useFolderValidationSchema } from '../../validation';
 import { useDashboardList } from '../../model/dashboard-client';
 import { useCreateFolderMutation } from '../../model/folder-client';
 import { generateMetadataName } from '../../utils/metadata';
@@ -45,6 +45,7 @@ export const CreateFolderDialog = ({
   const { successSnackbar, exceptionSnackbar } = useSnackbar();
   const { data: dashboards } = useDashboardList({ project: projectName });
   const createFolderMutation = useCreateFolderMutation();
+  const { schema, isSchemaLoading } = useFolderValidationSchema(projectName);
 
   const options = useMemo(
     () => [...(dashboards?.values() ?? [])].map((d) => ({ label: getResourceDisplayName(d), name: d.metadata.name })),
@@ -52,7 +53,7 @@ export const CreateFolderDialog = ({
   );
 
   const form = useForm<CreateFolderValidationType>({
-    resolver: zodResolver(createFolderDialogValidationSchema),
+    resolver: schema ? zodResolver(schema) : undefined,
     mode: 'onBlur',
     defaultValues: {
       selectedDashboards: [],
@@ -97,63 +98,78 @@ export const CreateFolderDialog = ({
   return (
     <Dialog open={open} onClose={handleClose} aria-labelledby="confirm-dialog" fullWidth={true}>
       <Dialog.Header>Add Folder</Dialog.Header>
-      <FormProvider {...form}>
-        <form onSubmit={form.handleSubmit(processForm)}>
-          <Dialog.Content sx={{ width: '100%' }}>
-            <Stack spacing={2}>
-              <Controller
-                render={({ field, fieldState }) => (
-                  <TextField
-                    label="Name"
-                    error={!!fieldState.error}
-                    helperText={fieldState.error?.message}
-                    {...field}
-                  />
-                )}
-                name="name"
-              />
-              <Controller
-                control={form.control}
-                name="selectedDashboards"
-                render={({ field, fieldState }) => (
-                  <Autocomplete
-                    multiple
-                    disableCloseOnSelect
-                    options={options}
-                    getOptionLabel={(option) => option.label}
-                    getOptionKey={(option) => option.name}
-                    isOptionEqualToValue={(option, value) => option.name === value.name}
-                    value={field.value}
-                    onChange={(_, newValue) => field.onChange(newValue)}
-                    renderTags={(value, getTagProps) =>
-                      value.map((option, index) => (
-                        <Chip {...getTagProps({ index })} key={option.name} label={option.label} />
-                      ))
-                    }
-                    renderInput={(params) => (
-                      <TextField
-                        {...params}
-                        label="Dashboards"
-                        placeholder="Select dashboards"
-                        error={!!fieldState.error}
-                        helperText={fieldState.error?.message}
-                      />
-                    )}
-                  />
-                )}
-              />
-            </Stack>
-          </Dialog.Content>
-          <Dialog.Actions>
-            <Button variant="contained" disabled={!form.formState.isValid} type="submit">
-              Add
-            </Button>
-            <Button variant="outlined" color="secondary" onClick={handleClose}>
-              Cancel
-            </Button>
-          </Dialog.Actions>
-        </form>
-      </FormProvider>
+      {isSchemaLoading ? (
+        <Stack
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            height: '100%',
+            width: '100%',
+            overflow: 'hidden',
+          }}
+        >
+          <CircularProgress />
+        </Stack>
+      ) : (
+        <FormProvider {...form}>
+          <form onSubmit={form.handleSubmit(processForm)}>
+            <Dialog.Content sx={{ width: '100%' }}>
+              <Stack spacing={2}>
+                <Controller
+                  render={({ field, fieldState }) => (
+                    <TextField
+                      label="Name"
+                      error={!!fieldState.error}
+                      helperText={fieldState.error?.message}
+                      {...field}
+                    />
+                  )}
+                  name="name"
+                />
+                <Controller
+                  control={form.control}
+                  name="selectedDashboards"
+                  render={({ field, fieldState }) => (
+                    <Autocomplete
+                      multiple
+                      disableCloseOnSelect
+                      options={options}
+                      getOptionLabel={(option) => option.label}
+                      getOptionKey={(option) => option.name}
+                      isOptionEqualToValue={(option, value) => option.name === value.name}
+                      value={field.value}
+                      onChange={(_, newValue) => field.onChange(newValue)}
+                      renderTags={(value, getTagProps) =>
+                        value.map((option, index) => (
+                          <Chip {...getTagProps({ index })} key={option.name} label={option.label} />
+                        ))
+                      }
+                      renderInput={(params) => (
+                        <TextField
+                          {...params}
+                          label="Dashboards"
+                          placeholder="Select dashboards"
+                          error={!!fieldState.error}
+                          helperText={fieldState.error?.message}
+                        />
+                      )}
+                    />
+                  )}
+                />
+              </Stack>
+            </Dialog.Content>
+            <Dialog.Actions>
+              <Button variant="contained" disabled={!form.formState.isValid} type="submit">
+                Add
+              </Button>
+              <Button variant="outlined" color="secondary" onClick={handleClose}>
+                Cancel
+              </Button>
+            </Dialog.Actions>
+          </form>
+        </FormProvider>
+      )}
     </Dialog>
   );
 };

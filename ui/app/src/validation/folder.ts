@@ -12,6 +12,8 @@
 // limitations under the License.
 
 import { z } from 'zod';
+import { useMemo } from 'react';
+import { useFolderList } from '../model/folder-client';
 
 export const editFolderDialogValidationSchema = z.object({
   selectedDashboards: z
@@ -37,3 +39,49 @@ export const createFolderDialogValidationSchema = z.object({
 
 export type EditFolderValidationType = z.infer<typeof editFolderDialogValidationSchema>;
 export type CreateFolderValidationType = z.infer<typeof createFolderDialogValidationSchema>;
+
+export interface FolderValidationSchema {
+  schema?: z.ZodSchema;
+  isSchemaLoading: boolean;
+  hasSchemaError: boolean;
+}
+
+export function useFolderValidationSchema(projectName?: string): FolderValidationSchema {
+  const { data: folders, isLoading: isFoldersLoading, isError } = useFolderList({ project: projectName });
+  return useMemo((): FolderValidationSchema => {
+    if (isFoldersLoading)
+      return {
+        schema: undefined,
+        isSchemaLoading: true,
+        hasSchemaError: false,
+      };
+
+    if (isError) {
+      return {
+        hasSchemaError: true,
+        isSchemaLoading: false,
+        schema: undefined,
+      };
+    }
+
+    if (!folders?.length)
+      return { schema: createFolderDialogValidationSchema, isSchemaLoading: false, hasSchemaError: false };
+
+    const refinedSchema = createFolderDialogValidationSchema.refine(
+      (schema) => {
+        return !(folders ?? []).some((folder) => {
+          return (
+            folder.metadata.project.toLowerCase() === (projectName ?? '').toLowerCase() &&
+            folder.metadata.name.toLowerCase() === schema.name.toLowerCase()
+          );
+        });
+      },
+      (schema) => ({
+        message: `Folder name '${schema.name}' already exists in '${projectName}' project!`,
+        path: ['name'],
+      })
+    );
+
+    return { schema: refinedSchema, isSchemaLoading: false, hasSchemaError: false };
+  }, [folders, isFoldersLoading, isError, projectName]);
+}
