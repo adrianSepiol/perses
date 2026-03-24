@@ -43,7 +43,7 @@ type FolderListOptions = Omit<UseQueryOptions<FolderResource[], StatusError>, 'q
 export function useFolderList(options: FolderListOptions): UseQueryResult<FolderResource[], StatusError> {
   const { project, metadataOnly, name, ...restOptions } = options;
   return useQuery<FolderResource[], StatusError>({
-    queryKey: [resource, project, metadataOnly],
+    queryKey: [resource, project, name, metadataOnly],
     queryFn: () => {
       return getFolders(options.project, options.metadataOnly, name);
     },

@@ -184,7 +184,7 @@ function DashboardTreeList({
                   key={row.original.name + '-edit'}
                   label="Edit"
                   action="update"
-                  scope="Dashboard"
+                  scope="Folder"
                   project={row.original.project}
                   onClick={handleEditFolderButtonClick(row.original.project, row.original.name, row.original.path)}
                 >

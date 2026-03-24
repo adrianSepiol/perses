@@ -35,7 +35,7 @@ export function CRUDAction({ render, action, scope, project }: CRUDActionProps):
   if (isReadonly) {
     return (
       <Tooltip title="Resource managed via code only" placement="top">
-        {render(true)}
+        <span>{render(true)}</span>
       </Tooltip>
     );
   }
@@ -48,7 +48,7 @@ export function CRUDAction({ render, action, scope, project }: CRUDActionProps):
 
     return (
       <Tooltip title={errorMessage} placement="top">
-        {render(true)}
+        <span>{render(true)}</span>
       </Tooltip>
     );
   }

@@ -285,7 +285,7 @@ export function collectDashboards(
     if (item.kind === 'Dashboard' && (!filter || filter(item.name))) {
       dashboards.push(item.name);
     } else if (item.kind === 'Folder' && deep) {
-      dashboards.push(...collectDashboards(item.spec));
+      dashboards.push(...collectDashboards(item.spec, deep, filter));
     }
   }
 

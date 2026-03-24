@@ -46,9 +46,18 @@ export function CRUDIconButton({
           </IconButton>
         ) : (
           <Tooltip title={label} placement="top">
-            <IconButton color={color} size="small" sx={{ padding: 0 }} onClick={onClick} disabled={disabled} {...props}>
-              {children}
-            </IconButton>
+            <span>
+              <IconButton
+                color={color}
+                size="small"
+                sx={{ padding: 0 }}
+                onClick={onClick}
+                disabled={disabled}
+                {...props}
+              >
+                {children}
+              </IconButton>
+            </span>
           </Tooltip>
         );
       }}
