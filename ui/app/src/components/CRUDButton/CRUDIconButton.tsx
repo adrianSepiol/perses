@@ -16,7 +16,7 @@ import { ReactElement } from 'react';
 import { CRUDAction, CRUDActionProps } from './CRUDAction';
 
 export interface CRUDIconButtonProps extends Omit<IconButtonProps, 'action'>, Omit<CRUDActionProps, 'render'> {
-  label?: string;
+  label: string;
 }
 
 /**

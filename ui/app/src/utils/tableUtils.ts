@@ -13,7 +13,7 @@
 
 import { DashboardResource, FolderResource, FolderSpec, getResourceDisplayName } from '@perses-dev/core';
 import { intlFormatDistance } from 'date-fns';
-import { DashboardTreeTableRow } from '../components/DashboardList/DashboardTreeList';
+import type { DashboardTreeTableRow } from '../components/DashboardList/DashboardTreeList';
 
 /**
  * Formats a date as a human-readable relative time string (e.g. "2 hours ago").
@@ -46,7 +46,7 @@ export const buildTableRows = (
   folderList: FolderResource[],
   dashboardsMap: Map<string, Map<string, DashboardResource>>
 ): DashboardTreeTableRow[] => {
-  const dashboardsMapCopy = copyDashBoardsMap(dashboardsMap);
+  const dashboardsMapCopy = copyDashboardsMap(dashboardsMap);
   const tableRows = mapToTableData(folderList ?? [], dashboardsMapCopy);
   const items = [...dashboardsMapCopy.values()]
     .flatMap((map) => [...map.values()])
@@ -55,7 +55,7 @@ export const buildTableRows = (
   return tableRows.concat(items);
 };
 
-const copyDashBoardsMap = (
+const copyDashboardsMap = (
   dashboardsMap: Map<string, Map<string, DashboardResource>>
 ): Map<string, Map<string, DashboardResource & { inFolder?: boolean }>> => {
   return new Map(

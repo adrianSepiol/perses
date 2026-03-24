@@ -33,7 +33,7 @@ import {
   EditDashboardDialog,
   EditFolderDialog,
 } from '../dialogs';
-import { DeleteFolderDialog } from '../dialogs/DeleteSubfolderDialog';
+import { DeleteFolderDialog } from '../dialogs/DeleteFolderDialog';
 import DashboardTreeList from './DashboardTreeList';
 import { DashboardFlatList } from './DashboardFlatList';
 
@@ -271,7 +271,7 @@ export function DashboardList(props: DashboardListProperties): ReactElement {
       )}
       {activeDialog.type === 'editFolder' && (
         <EditFolderDialog
-          open={true}
+          open={activeDialog.type === 'editFolder'}
           folder={activeDialog.target}
           dashboards={activeDialog.availableDashboards}
           path={activeDialog.path}
@@ -281,7 +281,7 @@ export function DashboardList(props: DashboardListProperties): ReactElement {
       )}
       {activeDialog.type === 'addFolder' && (
         <AddFolderDialog
-          open={true}
+          open={activeDialog.type === 'addFolder'}
           folder={activeDialog.target}
           dashboards={activeDialog.availableDashboards}
           path={activeDialog.path}
