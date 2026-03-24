@@ -23,7 +23,7 @@ import {
 } from '@perses-dev/core';
 import { Controller, FormProvider, SubmitHandler, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { editFolderDialogValidationSchema, EditFolderValidationType } from '../../validation';
+import { EditFolderValidationType, useAddFolderValidationSchema } from '../../validation';
 import { useUpdateFolderMutation } from '../../model/folder-client';
 import { collectDashboards, insertSubFolder } from '../../utils/folderUtils';
 
@@ -55,6 +55,7 @@ export const AddFolderDialog = ({
 }: AddFolderDialogProps): ReactElement => {
   const { successSnackbar, exceptionSnackbar } = useSnackbar();
   const updateFolderMutation = useUpdateFolderMutation();
+  const addFolderSchema = useAddFolderValidationSchema(folder.spec, path);
 
   const dashboardsInSiblingFolders: string[] = useMemo(() => collectDashboards(folder.spec, true), [folder.spec]);
 
@@ -67,7 +68,7 @@ export const AddFolderDialog = ({
   );
 
   const form = useForm<EditFolderValidationType>({
-    resolver: zodResolver(editFolderDialogValidationSchema),
+    resolver: zodResolver(addFolderSchema),
     mode: 'onBlur',
     defaultValues: {
       selectedDashboards: [],

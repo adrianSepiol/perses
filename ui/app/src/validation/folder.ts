@@ -13,7 +13,9 @@
 
 import { z } from 'zod';
 import { useMemo } from 'react';
+import { FolderSpec } from '@perses-dev/core';
 import { useFolderList } from '../model/folder-client';
+import { getSubFolderRef } from '../utils/folderUtils';
 
 export const editFolderDialogValidationSchema = z.object({
   selectedDashboards: z
@@ -46,6 +48,12 @@ export interface FolderValidationSchema {
   hasSchemaError: boolean;
 }
 
+/**
+ * Returns a validation schema for the Create Folder dialog.
+ * Extends {@link createFolderDialogValidationSchema} with a project-scoped name uniqueness check.
+ *
+ * @param projectName - The project to scope the uniqueness check to.
+ */
 export function useFolderValidationSchema(projectName?: string): FolderValidationSchema {
   const { data: folders, isLoading: isFoldersLoading, isError } = useFolderList({ project: projectName });
   return useMemo((): FolderValidationSchema => {
@@ -84,4 +92,26 @@ export function useFolderValidationSchema(projectName?: string): FolderValidatio
 
     return { schema: refinedSchema, isSchemaLoading: false, hasSchemaError: false };
   }, [folders, isFoldersLoading, isError, projectName]);
+}
+
+/**
+ * Returns a validation schema for the Add Sub-folder dialog.
+ * Extends {@link editFolderDialogValidationSchema} with a sibling name uniqueness check at the level identified by `path`.
+ *
+ * @param spec - Root spec array of the {@link FolderResource} being edited.
+ * @param path - Ordered folder names leading to the parent of the new sub-folder. Pass `[]` for root level.
+ */
+export function useAddFolderValidationSchema(spec: FolderSpec[], path: string[]): z.ZodSchema {
+  return useMemo(() => {
+    const siblings = path.length === 0 ? spec : (getSubFolderRef(spec, path).spec ?? []);
+    const siblingFolderNames = siblings.filter((s) => s.kind === 'Folder').map((s) => s.name.toLowerCase());
+
+    return editFolderDialogValidationSchema.refine(
+      (data) => !siblingFolderNames.includes(data.name.toLowerCase()),
+      (data) => ({
+        message: `A folder named '${data.name}' already exists at this level!`,
+        path: ['name'],
+      })
+    );
+  }, [spec, path]);
 }
