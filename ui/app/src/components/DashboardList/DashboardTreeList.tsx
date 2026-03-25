@@ -12,7 +12,7 @@
 // limitations under the License.
 
 import { DashboardResource, FolderResource } from '@perses-dev/core';
-import { Box, CircularProgress, IconButton, Link } from '@mui/material';
+import { Box, CircularProgress, IconButton, Link, Stack } from '@mui/material';
 import { Table, TableColumnConfig, TablePaginationState, TableSortingState } from '@perses-dev/components';
 import DeleteIcon from 'mdi-material-ui/DeleteOutline';
 import PencilIcon from 'mdi-material-ui/Pencil';
@@ -71,12 +71,20 @@ function DashboardTreeList({
   const columns = useMemo<Array<TableColumnConfig<DashboardTreeTableRow>>>(
     () => [
       {
+        id: 'project',
+        accessorKey: 'project',
+        header: 'Project',
+        align: 'left',
+        enableSorting: true,
+      },
+      {
         id: 'name',
         accessorKey: 'displayName',
         header: 'Name',
         headerDescription: 'Dashboard or folder name',
         align: 'left',
         enableSorting: true,
+        enableHiding: false,
         cellDescription: (): string => '',
         cell: ({ row, getValue }): ReactElement => {
           const value = getValue() as string;
@@ -116,6 +124,13 @@ function DashboardTreeList({
         enableSorting: true,
       },
       {
+        id: 'version',
+        accessorKey: 'version',
+        header: 'Version',
+        align: 'left',
+        enableSorting: true,
+      },
+      {
         id: 'createdAt',
         accessorKey: 'createdAt',
         header: 'Creation Date',
@@ -139,11 +154,12 @@ function DashboardTreeList({
         header: 'Actions',
         align: 'center',
         width: 75,
+        enableHiding: false,
         cellDescription: (): string => '',
         cell: ({ row }): ReactElement | undefined => {
           if (row.original.kind === 'Dashboard') {
             return (
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignContent: 'center' }}>
+              <Stack direction="row" gap={1} alignItems="center" justifyContent="center">
                 <CRUDIconButton
                   key={row.original.name + '-edit'}
                   label="Edit"
@@ -174,12 +190,12 @@ function DashboardTreeList({
                 >
                   <DeleteIcon />
                 </CRUDIconButton>
-              </Box>
+              </Stack>
             );
           }
           if (row.original.kind === 'Folder') {
             return (
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignContent: 'center' }}>
+              <Stack direction="row" gap={1} alignItems="center" justifyContent="center">
                 <CRUDIconButton
                   key={row.original.name + '-edit'}
                   label="Edit"
@@ -210,7 +226,7 @@ function DashboardTreeList({
                 >
                   <DeleteIcon />
                 </CRUDIconButton>
-              </Box>
+              </Stack>
             );
           }
         },
@@ -256,6 +272,9 @@ function DashboardTreeList({
       pagination={pagination}
       onPaginationChange={setPagination}
       getSubRows={(row: DashboardTreeTableRow): DashboardTreeTableRow[] | undefined => row.children}
+      hiddenColumns={['project', 'version']}
+      showSearch={true}
+      showColumnFilter={true}
     />
   );
 }
