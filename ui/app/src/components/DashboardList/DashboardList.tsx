@@ -68,7 +68,6 @@ export interface DashboardListProperties extends ListProperties {
   folderList: FolderResource[];
   isEphemeralDashboardEnabled: boolean;
   viewMode?: 'flat' | 'tree';
-  treeHeight?: number;
   initialState?: GridInitialStateCommunity;
 }
 
@@ -90,7 +89,6 @@ export function DashboardList(props: DashboardListProperties): ReactElement {
     initialState,
     isEphemeralDashboardEnabled,
     viewMode = 'flat',
-    treeHeight = 500,
   } = props;
   const { successSnackbar, exceptionSnackbar } = useSnackbar();
   const deleteDashboardMutation = useDeleteDashboardMutation();
@@ -229,7 +227,6 @@ export function DashboardList(props: DashboardListProperties): ReactElement {
           handleAddFolderButtonClick={handleAddFolderButtonClick}
           handleDeleteFolderButtonClick={handleDeleteFolderButtonClick}
           isLoading={isLoading}
-          height={treeHeight}
         />
       ) : (
         <DashboardFlatList

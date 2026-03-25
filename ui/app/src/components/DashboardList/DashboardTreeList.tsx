@@ -22,9 +22,11 @@ import ChevronRightIcon from 'mdi-material-ui/ChevronRight';
 import FolderOutlineIcon from 'mdi-material-ui/FolderOutline';
 import ViewDashboardOutlineIcon from 'mdi-material-ui/ViewDashboardOutline';
 import AddFolderOutlineIcon from 'mdi-material-ui/FolderPlusOutline';
-import { ReactElement, useMemo, useState } from 'react';
+import { ReactElement, useCallback, useEffect, useMemo, useState } from 'react';
+import { max } from 'lodash';
 import { CRUDIconButton } from '../CRUDButton/CRUDIconButton';
 import { buildTableRows, formatAbsoluteTime, formatRelativeTime } from '../../utils/tableUtils';
+import { useIsMobileSize } from '../../utils/browser-size';
 
 export interface DashboardTreeTableRow {
   kind: 'Folder' | 'Dashboard';
@@ -48,7 +50,6 @@ export interface DashboardTreeTableProps {
   handleEditFolderButtonClick: (project: string, name: string, path: string[]) => () => void;
   handleAddFolderButtonClick: (project: string, name: string, path: string[]) => () => void;
   handleDeleteFolderButtonClick: (project: string, name: string, path: string[]) => () => void;
-  height: number;
   isLoading?: boolean;
 }
 
@@ -61,9 +62,20 @@ function DashboardTreeList({
   handleEditFolderButtonClick,
   handleAddFolderButtonClick,
   handleDeleteFolderButtonClick,
-  height,
   isLoading,
 }: DashboardTreeTableProps): ReactElement {
+  const isMobileSize = useIsMobileSize();
+  const getTableHeight = useCallback(
+    () => (isMobileSize ? 500 : (max([window.innerHeight - 350, 300]) ?? 300)),
+    [isMobileSize]
+  );
+  const [height, setHeight] = useState(getTableHeight());
+  useEffect(() => {
+    const handleResize = (): void => setHeight(getTableHeight);
+    window.addEventListener('resize', handleResize);
+    return (): void => window.removeEventListener('resize', handleResize);
+  }, [getTableHeight]);
+
   const rows: DashboardTreeTableRow[] = useMemo(() => {
     return buildTableRows(folderList, dashboardsMap);
   }, [folderList, dashboardsMap]);
