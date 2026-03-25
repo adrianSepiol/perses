@@ -89,7 +89,7 @@ export const AddFolderDialog = ({
       {
         onSuccess: (updatedFolder: FolderResource) => {
           successSnackbar(`Folder ${getResourceExtendedDisplayName(updatedFolder)} has been successfully updated`);
-          onClose();
+          handleClose();
           onSuccess?.(updatedFolder.metadata.name);
         },
         onError: (err) => {

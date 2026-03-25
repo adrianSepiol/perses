@@ -16,16 +16,15 @@ import { useMemo } from 'react';
 import { FolderSpec } from '@perses-dev/core';
 import { useFolderList } from '../model/folder-client';
 import { getSubFolderRef } from '../utils/folderUtils';
+import { generateMetadataName } from '../utils/metadata';
 
 export const editFolderDialogValidationSchema = z.object({
-  selectedDashboards: z
-    .array(
-      z.object({
-        name: z.string(),
-        label: z.string(),
-      })
-    )
-    .min(1, 'You must select at least one dashboard'),
+  selectedDashboards: z.array(
+    z.object({
+      name: z.string(),
+      label: z.string(),
+    })
+  ),
   name: z.string().min(1, 'Name is required'),
 });
 
@@ -80,7 +79,7 @@ export function useFolderValidationSchema(projectName?: string): FolderValidatio
         return !(folders ?? []).some((folder) => {
           return (
             folder.metadata.project.toLowerCase() === (projectName ?? '').toLowerCase() &&
-            folder.metadata.name.toLowerCase() === schema.name.toLowerCase()
+            folder.metadata.name.toLowerCase() === generateMetadataName(schema.name.toLowerCase())
           );
         });
       },
