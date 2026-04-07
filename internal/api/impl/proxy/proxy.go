@@ -105,8 +105,10 @@ func (u *unsavedProxyBody) setRequestParams(ctx echo.Context) {
 
 	if len(u.Body) > 0 {
 		req.Body = io.NopCloser(strings.NewReader(string(u.Body)))
+		req.ContentLength = int64(len(u.Body))
 	} else {
 		req.Body = nil
+		req.ContentLength = 0
 	}
 
 	ctx.SetRequest(req)
