@@ -13,7 +13,7 @@
 
 import { DashboardResource, FolderResource } from '@perses-dev/core';
 import { Box, CircularProgress, IconButton, Link, Stack } from '@mui/material';
-import { Table, TableColumnConfig, TablePaginationState, TableSortingState } from '@perses-dev/components';
+import { Table, TableColumnConfig } from '@perses-dev/components';
 import DeleteIcon from 'mdi-material-ui/DeleteOutline';
 import PencilIcon from 'mdi-material-ui/Pencil';
 import ContentCopyIcon from 'mdi-material-ui/ContentCopy';
@@ -88,6 +88,7 @@ function DashboardTreeList({
         header: 'Project',
         align: 'left',
         enableSorting: true,
+        width: 150,
       },
       {
         id: 'name',
@@ -97,6 +98,7 @@ function DashboardTreeList({
         align: 'left',
         enableSorting: true,
         enableHiding: false,
+        width: 300,
         cellDescription: (): string => '',
         cell: ({ row, getValue }): ReactElement => {
           const value = getValue() as string;
@@ -141,6 +143,7 @@ function DashboardTreeList({
         header: 'Version',
         align: 'left',
         enableSorting: true,
+        width: 150,
       },
       {
         id: 'createdAt',
@@ -148,6 +151,7 @@ function DashboardTreeList({
         header: 'Creation Date',
         align: 'left',
         enableSorting: true,
+        width: 150,
         cellDescription: ({ getValue }): string => formatAbsoluteTime(getValue()),
         cell: ({ getValue }): string | undefined => formatRelativeTime(getValue()),
       },
@@ -157,6 +161,7 @@ function DashboardTreeList({
         header: 'Last Update',
         align: 'left',
         enableSorting: true,
+        width: 150,
         cellDescription: ({ getValue }): string => formatAbsoluteTime(getValue()),
         cell: ({ getValue }): string | undefined => formatRelativeTime(getValue()),
       },
@@ -165,8 +170,8 @@ function DashboardTreeList({
         accessorKey: 'actions',
         header: 'Actions',
         align: 'center',
-        width: 75,
         enableHiding: false,
+        width: 90,
         cellDescription: (): string => '',
         cell: ({ row }): ReactElement | undefined => {
           if (row.original.kind === 'Dashboard') {
@@ -254,8 +259,8 @@ function DashboardTreeList({
     ]
   );
 
-  const [sorting, setSorting] = useState<TableSortingState>([{ id: 'name', desc: false }]);
-  const [pagination, setPagination] = useState<TablePaginationState>({ pageIndex: 0, pageSize: 10 });
+  const [sorting, setSorting] = useState([{ id: 'name', desc: false }]);
+  const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
 
   if (isLoading) {
     return (
@@ -285,8 +290,10 @@ function DashboardTreeList({
       onPaginationChange={setPagination}
       getSubRows={(row: DashboardTreeTableRow): DashboardTreeTableRow[] | undefined => row.children}
       hiddenColumns={['project', 'version']}
-      showSearch={true}
-      showColumnFilter={true}
+      tableToolbarConfig={{
+        isSearchEnabled: true,
+        isColumnFilterEnabled: true,
+      }}
     />
   );
 }

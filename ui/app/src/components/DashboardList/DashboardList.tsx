@@ -19,7 +19,7 @@ import {
   getResourceDisplayName,
   getResourceExtendedDisplayName,
 } from '@perses-dev/core';
-import { Stack } from '@mui/material';
+import { Card, Stack } from '@mui/material';
 import { ReactElement, useCallback, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSnackbar } from '@perses-dev/components';
@@ -229,15 +229,17 @@ export function DashboardList(props: DashboardListProperties): ReactElement {
           isLoading={isLoading}
         />
       ) : (
-        <DashboardFlatList
-          dashboardList={dashboardList}
-          handleRenameButtonClick={handleRenameButtonClick}
-          handleDuplicateButtonClick={handleDuplicateButtonClick}
-          handleDeleteButtonClick={handleDeleteButtonClick}
-          initialState={initialState}
-          hideToolbar={hideToolbar}
-          isLoading={isLoading}
-        />
+        <Card>
+          <DashboardFlatList
+            dashboardList={dashboardList}
+            handleRenameButtonClick={handleRenameButtonClick}
+            handleDuplicateButtonClick={handleDuplicateButtonClick}
+            handleDeleteButtonClick={handleDeleteButtonClick}
+            initialState={initialState}
+            hideToolbar={hideToolbar}
+            isLoading={isLoading}
+          />
+        </Card>
       )}
       {activeDialog.type === 'editDashboard' && (
         <EditDashboardDialog

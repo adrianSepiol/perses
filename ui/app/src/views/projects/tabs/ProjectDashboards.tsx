@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { Card, CardProps, Stack, ToggleButton, ToggleButtonGroup, Tooltip } from '@mui/material';
+import { Box, BoxProps, Stack, ToggleButton, ToggleButtonGroup, Tooltip } from '@mui/material';
 import FileTreeOutlineIcon from 'mdi-material-ui/FileTreeOutline';
 import ViewListOutlineIcon from 'mdi-material-ui/ViewListOutline';
 import { ReactElement, useState } from 'react';
@@ -20,7 +20,7 @@ import { DashboardList } from '../../../components/DashboardList/DashboardList';
 import { useIsEphemeralDashboardEnabled } from '../../../context/Config';
 import { useFolderList } from '../../../model/folder-client';
 
-interface ProjectDashboardsProps extends CardProps {
+interface ProjectDashboardsProps extends BoxProps {
   projectName: string;
   hideToolbar?: boolean;
 }
@@ -34,7 +34,7 @@ export function ProjectDashboards({ projectName, hideToolbar, ...props }: Projec
   const isEphemeralDashboardEnabled = useIsEphemeralDashboardEnabled();
 
   return (
-    <Card {...props}>
+    <Box {...props}>
       <Stack direction="row" justifyContent="flex-end">
         <ToggleButtonGroup
           size="small"
@@ -74,6 +74,6 @@ export function ProjectDashboards({ projectName, hideToolbar, ...props }: Projec
         isEphemeralDashboardEnabled={isEphemeralDashboardEnabled}
         viewMode={viewMode}
       />
-    </Card>
+    </Box>
   );
 }
