@@ -13,13 +13,9 @@
 
 import { Box, CircularProgress, Stack } from '@mui/material';
 import { ErrorAlert, ErrorBoundary } from '@perses-dev/components';
-import {
-  DashboardResource,
-  EphemeralDashboardResource,
-  getResourceDisplayName,
-  ExternalVariableDefinition,
-} from '@perses-dev/core';
-import { OnSaveDashboard, ViewDashboard } from '@perses-dev/dashboards';
+import { getResourceDisplayName, ExternalVariableDefinition } from '@perses-dev/core';
+import { DashboardSpec } from '@perses-dev/spec';
+import { DashboardResource, OnSaveDashboard, ViewDashboard } from '@perses-dev/dashboards';
 import { PluginRegistry, UsageMetricsProvider, ValidationProvider } from '@perses-dev/plugin-system';
 import { ReactElement, useMemo } from 'react';
 import ProjectBreadcrumbs from '../../../components/breadcrumbs/ProjectBreadcrumbs';
@@ -28,14 +24,18 @@ import { useGlobalVariableList } from '../../../model/global-variable-client';
 import { useProject } from '../../../model/project-client';
 import { useVariableList } from '../../../model/variable-client';
 import { buildGlobalVariableDefinition, buildProjectVariableDefinition } from '../../../utils/variables';
-import { useIsLocalDatasourceEnabled, useIsLocalVariableEnabled } from '../../../context/Config';
+import {
+  useIsKeyboardShortcutsEnabled,
+  useIsLocalDatasourceEnabled,
+  useIsLocalVariableEnabled,
+} from '../../../context/Config';
 import { useRemotePluginLoader } from '../../../model/remote-plugin-loader';
 import { PERSES_APP_CONFIG } from '../../../config';
 
 export interface GenericDashboardViewProps {
-  dashboardResource: DashboardResource | EphemeralDashboardResource;
+  dashboardResource: DashboardResource;
   onSave?: OnSaveDashboard;
-  onDiscard?: (entity: DashboardResource) => void;
+  onDiscard?: (name: string, spec: DashboardSpec) => void;
   isReadonly: boolean;
   isEditing: boolean;
   isCreating?: boolean;
@@ -55,9 +55,11 @@ export function HelperDashboardView(props: GenericDashboardViewProps): ReactElem
     isCreating,
     isLeavingConfirmDialogEnabled = true,
   } = props;
+  const breadcrumbVariant = isEditing || isCreating ? 'workspace' : 'default';
 
   const isLocalDatasourceEnabled = useIsLocalDatasourceEnabled();
   const isLocalVariableEnabled = useIsLocalVariableEnabled();
+  const isKeyboardShortcutsEnabled = useIsKeyboardShortcutsEnabled();
   const datasourceApi = useDatasourceApi();
   const pluginLoader = useRemotePluginLoader();
 
@@ -114,7 +116,11 @@ export function HelperDashboardView(props: GenericDashboardViewProps): ReactElem
                   datasourceApi={datasourceApi}
                   externalVariableDefinitions={externalVariableDefinitions}
                   dashboardTitleComponent={
-                    <ProjectBreadcrumbs dashboardName={getResourceDisplayName(dashboardResource)} project={project} />
+                    <ProjectBreadcrumbs
+                      dashboardName={getResourceDisplayName(dashboardResource)}
+                      project={project}
+                      variant={breadcrumbVariant}
+                    />
                   }
                   onSave={onSave}
                   onDiscard={onDiscard}
@@ -122,6 +128,7 @@ export function HelperDashboardView(props: GenericDashboardViewProps): ReactElem
                   isReadonly={isReadonly}
                   isVariableEnabled={isLocalVariableEnabled}
                   isDatasourceEnabled={isLocalDatasourceEnabled}
+                  disableShortcuts={!isKeyboardShortcutsEnabled}
                   isEditing={isEditing}
                   isCreating={isCreating}
                   isLeavingConfirmDialogEnabled={isLeavingConfirmDialogEnabled}
