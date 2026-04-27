@@ -111,7 +111,11 @@ function DashboardTreeList({
               {kind === 'Folder' ? (
                 <>
                   <IconButton onClick={row.getToggleExpandedHandler()} sx={{ padding: 0 }}>
-                    {row.getIsExpanded() ? <ChevronDownIcon fontSize="small" /> : <ChevronRightIcon fontSize="small" />}
+                    {row.getIsExpanded() || !row.getCanExpand() ? (
+                      <ChevronDownIcon fontSize="small" />
+                    ) : (
+                      <ChevronRightIcon fontSize="small" />
+                    )}
                   </IconButton>
                   <FolderOutlineIcon fontSize="small" />
                   {value}
