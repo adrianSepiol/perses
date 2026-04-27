@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { DashboardResource } from '@perses-dev/core';
 import { GridColDef, GridRowParams } from '@mui/x-data-grid';
 import { GridInitialStateCommunity } from '@mui/x-data-grid/models/gridStateCommunity';
 import { ReactElement, useMemo } from 'react';
@@ -25,12 +24,13 @@ import {
   TAGS_COL_DEF,
   UPDATED_AT_COL_DEF,
   VERSION_COL_DEF,
+  VIEWED_AT_COL_DEF,
 } from '../list';
 import { CRUDGridActionsCellItem } from '../CRUDButton/CRUDGridActionsCellItem';
 import { DashboardDataGrid, Row } from './DashboardDataGrid';
 
 export interface DashboardFlatListProps {
-  dashboardList: DashboardResource[];
+  dashboardList: Row[];
   handleRenameButtonClick: (project: string, name: string) => () => void;
   handleDuplicateButtonClick: (project: string, name: string) => () => void;
   handleDeleteButtonClick: (project: string, name: string) => () => void;
@@ -48,19 +48,6 @@ export function DashboardFlatList({
   hideToolbar,
   initialState,
 }: DashboardFlatListProps): ReactElement {
-  const rows = useMemo(() => {
-    return dashboardList.map<Row>((dashboard, index) => ({
-      index,
-      project: dashboard.metadata.project,
-      name: dashboard.metadata.name,
-      displayName: dashboard.spec?.display?.name ?? dashboard.metadata.name,
-      version: dashboard.metadata.version ?? 0,
-      createdAt: dashboard.metadata.createdAt ?? '',
-      updatedAt: dashboard.metadata.updatedAt ?? '',
-      tags: dashboard.metadata.tags ?? [],
-    }));
-  }, [dashboardList]);
-
   const columns = useMemo<Array<GridColDef<Row>>>(
     () => [
       PROJECT_COL_DEF,
@@ -69,6 +56,7 @@ export function DashboardFlatList({
       VERSION_COL_DEF,
       CREATED_AT_COL_DEF,
       UPDATED_AT_COL_DEF,
+      VIEWED_AT_COL_DEF,
       {
         field: 'actions',
         headerName: 'Actions',
@@ -111,7 +99,7 @@ export function DashboardFlatList({
 
   return (
     <DashboardDataGrid
-      rows={rows}
+      rows={dashboardList}
       columns={columns}
       initialState={initialState}
       hideToolbar={hideToolbar}

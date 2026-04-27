@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { DashboardResource, FolderResource } from '@perses-dev/core';
+import { FolderResource } from '@perses-dev/core';
 import { Box, CircularProgress, IconButton, Link, Stack } from '@mui/material';
 import { Table, TableColumnConfig } from '@perses-dev/components';
 import DeleteIcon from 'mdi-material-ui/DeleteOutline';
@@ -22,11 +22,12 @@ import ChevronRightIcon from 'mdi-material-ui/ChevronRight';
 import FolderOutlineIcon from 'mdi-material-ui/FolderOutline';
 import ViewDashboardOutlineIcon from 'mdi-material-ui/ViewDashboardOutline';
 import AddFolderOutlineIcon from 'mdi-material-ui/FolderPlusOutline';
-import { ReactElement, useCallback, useEffect, useMemo, useState } from 'react';
+import { ReactElement, ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
 import { max } from 'lodash';
 import { CRUDIconButton } from '../CRUDButton/CRUDIconButton';
 import { buildTableRows, formatAbsoluteTime, formatRelativeTime } from '../../utils/tableUtils';
 import { useIsMobileSize } from '../../utils/browser-size';
+import { DashboardListRow } from './DashboardList';
 
 export interface DashboardTreeTableRow {
   kind: 'Folder' | 'Dashboard';
@@ -38,12 +39,13 @@ export interface DashboardTreeTableRow {
   updatedAt?: Date;
   tags?: string[];
   version?: number;
+  viewedAt?: Date;
   children?: DashboardTreeTableRow[];
 }
 
 export interface DashboardTreeTableProps {
   folderList: FolderResource[];
-  dashboardsMap: Map<string, Map<string, DashboardResource>>;
+  dashboardsMap: Map<string, Map<string, DashboardListRow>>;
   handleRenameButtonClick: (project: string, name: string) => () => void;
   handleDuplicateButtonClick: (project: string, name: string) => () => void;
   handleDeleteButtonClick: (project: string, name: string) => () => void;
@@ -153,7 +155,7 @@ function DashboardTreeList({
         enableSorting: true,
         width: 150,
         cellDescription: ({ getValue }): string => formatAbsoluteTime(getValue()),
-        cell: ({ getValue }): string | undefined => formatRelativeTime(getValue()),
+        cell: ({ getValue }): string | null => formatRelativeTime(getValue()),
       },
       {
         id: 'updatedAt',
@@ -163,7 +165,18 @@ function DashboardTreeList({
         enableSorting: true,
         width: 150,
         cellDescription: ({ getValue }): string => formatAbsoluteTime(getValue()),
-        cell: ({ getValue }): string | undefined => formatRelativeTime(getValue()),
+        cell: ({ getValue }): string | null => formatRelativeTime(getValue()),
+      },
+      {
+        id: 'viewedAt',
+        accessorKey: 'viewedAt',
+        header: 'Last Seen',
+        align: 'left',
+        enableSorting: true,
+        width: 150,
+        cellDescription: ({ getValue }): string => formatAbsoluteTime(getValue()),
+        cell: ({ getValue, row }): ReactNode =>
+          formatRelativeTime(getValue()) ?? (row.original.kind === 'Dashboard' ? <span>—</span> : null),
       },
       {
         id: 'actions',

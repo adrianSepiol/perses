@@ -14,22 +14,17 @@
 import { Dispatch, DispatchWithoutAction, ReactElement, useMemo } from 'react';
 import { Autocomplete, Button, Chip, Stack, TextField } from '@mui/material';
 import { Dialog, useSnackbar } from '@perses-dev/components';
-import {
-  DashboardResource,
-  FolderResource,
-  FolderSpec,
-  getResourceDisplayName,
-  getResourceExtendedDisplayName,
-} from '@perses-dev/core';
+import { FolderResource, FolderSpec, getResourceExtendedDisplayName } from '@perses-dev/core';
 import { Controller, FormProvider, SubmitHandler, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { editFolderDialogValidationSchema, EditFolderValidationType } from '../../validation';
 import { useUpdateFolderMutation } from '../../model/folder-client';
 import { collectDashboards, getSubFolderDeepCopy, replaceSubFolder } from '../../utils/folderUtils';
+import { DashboardListRow } from '../DashboardList/DashboardList';
 
 export interface EditFolderDialogProps {
   folder: FolderResource;
-  dashboards: Map<string, DashboardResource>;
+  dashboards: Map<string, DashboardListRow>;
   open: boolean;
   path: string[];
   onClose: DispatchWithoutAction;
@@ -42,7 +37,7 @@ export interface EditFolderDialogProps {
  * @param onClose Provides the function to close itself.
  * @param onSuccess Action to perform when user confirmed.
  * @param folder The root folder resource.
- * @param dashboards The list of available dashboards to assign to the folder.
+ * @param dashboards Map of available dashboards for edited folder
  * @param path Path of folder names leading to the folder being edited.
  */
 export const EditFolderDialog = ({
@@ -73,15 +68,15 @@ export const EditFolderDialog = ({
   }, [folderToEdit.spec]);
 
   const dashboardsInSiblingFolders: string[] = useMemo(
-    () => collectDashboards(folder.spec, true, (name) => dashboardNamesInFolder.includes(name)),
+    () => collectDashboards(folder.spec, true, (name) => !dashboardNamesInFolder.includes(name)),
     [dashboardNamesInFolder, folder.spec]
   );
 
   const options = useMemo(
     () =>
       [...dashboards.values()]
-        .filter((s) => !dashboardsInSiblingFolders.includes(s.metadata.name))
-        .map((d) => ({ label: getResourceDisplayName(d), name: d.metadata.name })),
+        .filter((s) => !dashboardsInSiblingFolders.includes(s.name))
+        .map((d) => ({ label: d.displayName, name: d.name })),
     [dashboardsInSiblingFolders, dashboards]
   );
 
@@ -91,7 +86,7 @@ export const EditFolderDialog = ({
     defaultValues: {
       selectedDashboards: dashboardNamesInFolder.map((name) => ({
         name,
-        label: getResourceDisplayName(dashboards.get(name)!),
+        label: dashboards.get(name)?.displayName,
       })),
       name: editingRoot ? folderToEdit.metadata.name : folderToEdit.name,
     },

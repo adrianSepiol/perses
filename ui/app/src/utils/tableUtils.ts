@@ -11,16 +11,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { DashboardResource, FolderResource, FolderSpec, getResourceDisplayName } from '@perses-dev/core';
+import { FolderResource, FolderSpec, getResourceDisplayName } from '@perses-dev/core';
 import { intlFormatDistance } from 'date-fns';
 import type { DashboardTreeTableRow } from '../components/DashboardList/DashboardTreeList';
+import { DashboardListRow } from '../components/DashboardList/DashboardList';
 
 /**
  * Formats a date as a human-readable relative time string (e.g. "2 hours ago").
- * Returns `undefined` if no date is provided.
+ * Returns `null` if no date is provided.
  */
-export function formatRelativeTime(value: Date | undefined): string | undefined {
-  if (!value) return undefined;
+export function formatRelativeTime(value: Date | undefined): string | null {
+  if (!value) return null;
   return intlFormatDistance(value, new Date());
 }
 
@@ -33,7 +34,7 @@ export function formatAbsoluteTime(value: Date | undefined): string {
 }
 
 /**
- * Builds the flat+nested row structure for the dashboard tree table.
+ * Builds the nested row structure for the dashboard tree table.
  *
  * Folders are mapped to parent rows with their children resolved from `dashboardsMap`.
  * Dashboards that don't belong to any folder are appended at the root level.
@@ -44,7 +45,7 @@ export function formatAbsoluteTime(value: Date | undefined): string {
  */
 export const buildTableRows = (
   folderList: FolderResource[],
-  dashboardsMap: Map<string, Map<string, DashboardResource>>
+  dashboardsMap: Map<string, Map<string, DashboardListRow>>
 ): DashboardTreeTableRow[] => {
   const dashboardsMapCopy = copyDashboardsMap(dashboardsMap);
   const tableRows = mapToTableData(folderList ?? [], dashboardsMapCopy);
@@ -56,39 +57,41 @@ export const buildTableRows = (
 };
 
 const copyDashboardsMap = (
-  dashboardsMap: Map<string, Map<string, DashboardResource>>
-): Map<string, Map<string, DashboardResource & { inFolder?: boolean }>> => {
+  dashboardsMap: Map<string, Map<string, DashboardListRow>>
+): Map<string, Map<string, DashboardListRow & { inFolder?: boolean }>> => {
   return new Map(
-    [...dashboardsMap.entries()].map(([project, inner]): [string, Map<string, DashboardResource>] => [
+    [...dashboardsMap.entries()].map(([project, inner]): [string, Map<string, DashboardListRow>] => [
       project,
       new Map(inner),
     ])
   );
 };
 
-const mapToTableRow = (dashboardResource: DashboardResource, path: string[]): DashboardTreeTableRow => {
-  const createdAt = dashboardResource.metadata.createdAt;
-  const updatedAt = dashboardResource.metadata.updatedAt;
+const mapToTableRow = (dashboardResource: DashboardListRow, path: string[]): DashboardTreeTableRow => {
+  const createdAt = dashboardResource.createdAt;
+  const updatedAt = dashboardResource.updatedAt;
+  const viewedAt = dashboardResource.viewedAt;
   return {
     kind: 'Dashboard',
-    name: dashboardResource.metadata.name,
-    displayName: getResourceDisplayName(dashboardResource),
+    name: dashboardResource.name,
+    displayName: dashboardResource.displayName,
     createdAt: createdAt ? new Date(createdAt) : undefined,
     updatedAt: updatedAt ? new Date(updatedAt) : undefined,
-    tags: dashboardResource.metadata.tags,
-    version: dashboardResource.metadata.version,
-    project: dashboardResource.metadata.project,
+    tags: dashboardResource.tags,
+    version: dashboardResource.version,
+    project: dashboardResource.project,
+    viewedAt: viewedAt ? new Date(viewedAt) : undefined,
     path: path,
   };
 };
 
 const mapToTableData = (
   folderList: FolderResource[],
-  dashboardMap: Map<string, Map<string, DashboardResource>>
+  dashboardMap: Map<string, Map<string, DashboardListRow>>
 ): DashboardTreeTableRow[] => {
   return folderList.map((folder) => {
     const project = folder.metadata.project;
-    const map = dashboardMap.get(project) ?? new Map<string, DashboardResource>();
+    const map = dashboardMap.get(project) ?? new Map<string, DashboardListRow>();
     const rootPath: string[] = [];
     return {
       kind: folder.kind,
@@ -105,7 +108,7 @@ const mapToTableData = (
 
 const mapFolderSpecToTableRow = (
   folderSpec: FolderSpec[],
-  dashboardMap: Map<string, DashboardResource & { inFolder?: boolean }>,
+  dashboardMap: Map<string, DashboardListRow & { inFolder?: boolean }>,
   project: string,
   parentPath: string[]
 ): DashboardTreeTableRow[] => {

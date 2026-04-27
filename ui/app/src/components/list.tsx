@@ -97,7 +97,7 @@ export const VIEWED_AT_COL_DEF: GridColDef = {
   renderCell: (params) =>
     params.value ? (
       <Tooltip title={params.value.toUTCString()} placement="top">
-        <span>{intlFormatDistance(params.value, new Date())}</span>
+        <span>{formatRelativeTime(params.value)}</span>
       </Tooltip>
     ) : (
       <span>—</span>

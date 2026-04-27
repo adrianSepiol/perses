@@ -14,22 +14,17 @@
 import { Dispatch, DispatchWithoutAction, ReactElement, useMemo } from 'react';
 import { Autocomplete, Button, Chip, Stack, TextField } from '@mui/material';
 import { Dialog, useSnackbar } from '@perses-dev/components';
-import {
-  DashboardResource,
-  FolderResource,
-  FolderSpec,
-  getResourceDisplayName,
-  getResourceExtendedDisplayName,
-} from '@perses-dev/core';
+import { FolderResource, FolderSpec, getResourceExtendedDisplayName } from '@perses-dev/core';
 import { Controller, FormProvider, SubmitHandler, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { EditFolderValidationType, useAddFolderValidationSchema } from '../../validation';
 import { useUpdateFolderMutation } from '../../model/folder-client';
 import { collectDashboards, insertSubFolder } from '../../utils/folderUtils';
+import { DashboardListRow } from '../DashboardList/DashboardList';
 
 export interface AddFolderDialogProps {
   folder: FolderResource;
-  dashboards: Map<string, DashboardResource>;
+  dashboards: Map<string, DashboardListRow>;
   open: boolean;
   path: string[];
   onClose: DispatchWithoutAction;
@@ -62,8 +57,8 @@ export const AddFolderDialog = ({
   const options = useMemo(
     () =>
       [...dashboards.values()]
-        .filter((s) => !dashboardsInSiblingFolders.includes(s.metadata.name))
-        .map((d) => ({ label: getResourceDisplayName(d), name: d.metadata.name })),
+        .filter((s) => !dashboardsInSiblingFolders.includes(s.name))
+        .map((d) => ({ label: d.displayName, name: d.name })),
     [dashboardsInSiblingFolders, dashboards]
   );
 

@@ -34,6 +34,7 @@ import {
   EditFolderDialog,
 } from '../dialogs';
 import { DeleteFolderDialog } from '../dialogs/DeleteFolderDialog';
+import { useNavHistory } from '../../context/DashboardNavHistory';
 import DashboardTreeList from './DashboardTreeList';
 import { DashboardFlatList } from './DashboardFlatList';
 
@@ -44,13 +45,13 @@ type deleteFolderAction = { type: 'deleteFolder'; target: FolderResource; path: 
 type editFolderAction = {
   type: 'editFolder';
   target: FolderResource;
-  availableDashboards: Map<string, DashboardResource>;
+  availableDashboards: Map<string, DashboardListRow>;
   path: string[];
 };
 type addFolder = {
   type: 'addFolder';
   target: FolderResource;
-  availableDashboards: Map<string, DashboardResource>;
+  availableDashboards: Map<string, DashboardListRow>;
   path: string[];
 };
 type openDialogAction =
@@ -62,6 +63,18 @@ type openDialogAction =
   | deleteFolderAction
   | { type: 'none' };
 type openDialogActionType = openDialogAction['type'];
+
+export interface DashboardListRow {
+  index: number;
+  project: string;
+  name: string;
+  displayName: string;
+  version: number;
+  createdAt: string;
+  updatedAt: string;
+  tags: string[];
+  viewedAt?: string;
+}
 
 export interface DashboardListProperties extends ListProperties {
   dashboardList: DashboardResource[];
@@ -92,16 +105,34 @@ export function DashboardList(props: DashboardListProperties): ReactElement {
   } = props;
   const { successSnackbar, exceptionSnackbar } = useSnackbar();
   const deleteDashboardMutation = useDeleteDashboardMutation();
+  const navHistory = useNavHistory();
+  const dashboardsRows = useMemo(() => {
+    return dashboardList.map<DashboardListRow>((dashboard, index) => {
+      const historyMap = new Map(navHistory.map((h) => [`${h.project}/${h.name}`, h.date]));
+      const viewedAt = historyMap.get(`${dashboard.metadata.project}/${dashboard.metadata.name}`);
+      return {
+        index,
+        project: dashboard.metadata.project,
+        name: dashboard.metadata.name,
+        displayName: getResourceDisplayName(dashboard),
+        version: dashboard.metadata.version ?? 0,
+        createdAt: dashboard.metadata.createdAt ?? '',
+        updatedAt: dashboard.metadata.updatedAt ?? '',
+        tags: dashboard.metadata.tags ?? [],
+        viewedAt,
+      };
+    });
+  }, [dashboardList, navHistory]);
 
   const dashboardsMap = useMemo(() => {
-    const map = new Map<string, Map<string, DashboardResource>>();
-    dashboardList.forEach((dashboard) => {
-      const projectMap = map.get(dashboard.metadata.project) ?? new Map<string, DashboardResource>();
-      projectMap.set(dashboard.metadata.name, dashboard);
-      map.set(dashboard.metadata.project, projectMap);
+    const map = new Map<string, Map<string, DashboardListRow>>();
+    dashboardsRows.forEach((dashboard) => {
+      const projectMap = map.get(dashboard.project) ?? new Map<string, DashboardListRow>();
+      projectMap.set(dashboard.name, dashboard);
+      map.set(dashboard.project, projectMap);
     });
     return map;
-  }, [dashboardList]);
+  }, [dashboardsRows]);
 
   const [activeDialog, setActiveDialog] = useState<openDialogAction>({ type: 'none' });
 
@@ -112,8 +143,10 @@ export function DashboardList(props: DashboardListProperties): ReactElement {
         case 'duplicateDashboard':
         case 'deleteDashboard': {
           const dashboard = dashboardsMap.get(project)?.get(name);
-          if (dashboard) {
-            setActiveDialog({ type: dialog, target: dashboard });
+          const dashboardResource = dashboard ? dashboardList[dashboard.index] : undefined;
+          if (dashboardResource) {
+            console.log(dashboardResource);
+            setActiveDialog({ type: dialog, target: dashboardResource });
           }
           break;
         }
@@ -153,7 +186,7 @@ export function DashboardList(props: DashboardListProperties): ReactElement {
         }
       }
     },
-    [dashboardsMap, folderList]
+    [dashboardList, dashboardsMap, folderList]
   );
 
   const handleRenameButtonClick = openDialog('editDashboard');
@@ -231,7 +264,7 @@ export function DashboardList(props: DashboardListProperties): ReactElement {
       ) : (
         <Card>
           <DashboardFlatList
-            dashboardList={dashboardList}
+            dashboardList={dashboardsRows}
             handleRenameButtonClick={handleRenameButtonClick}
             handleDuplicateButtonClick={handleDuplicateButtonClick}
             handleDeleteButtonClick={handleDeleteButtonClick}
