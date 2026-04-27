@@ -25,7 +25,7 @@ import AddFolderOutlineIcon from 'mdi-material-ui/FolderPlusOutline';
 import { ReactElement, ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
 import { max } from 'lodash';
 import { CRUDIconButton } from '../CRUDButton/CRUDIconButton';
-import { buildTableRows, formatAbsoluteTime, formatRelativeTime } from '../../utils/tableUtils';
+import { buildTableRows, formatAbsoluteTime, formatRelativeTime } from '../../utils/dashboardTableUtils';
 import { useIsMobileSize } from '../../utils/browser-size';
 import { DashboardListRow } from './DashboardList';
 
