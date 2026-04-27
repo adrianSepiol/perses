@@ -145,7 +145,6 @@ export function DashboardList(props: DashboardListProperties): ReactElement {
           const dashboard = dashboardsMap.get(project)?.get(name);
           const dashboardResource = dashboard ? dashboardList[dashboard.index] : undefined;
           if (dashboardResource) {
-            console.log(dashboardResource);
             setActiveDialog({ type: dialog, target: dashboardResource });
           }
           break;
