@@ -107,8 +107,9 @@ export function DashboardList(props: DashboardListProperties): ReactElement {
   const deleteDashboardMutation = useDeleteDashboardMutation();
   const navHistory = useNavHistory();
   const dashboardsRows = useMemo(() => {
-    return dashboardList.map<DashboardListRow>((dashboard, index) => {
       const historyMap = new Map(navHistory.map((h) => [`${h.project}/${h.name}`, h.date]));
+      return dashboardList.map<DashboardListRow>((dashboard, index) => {
+
       const viewedAt = historyMap.get(`${dashboard.metadata.project}/${dashboard.metadata.name}`);
       return {
         index,
