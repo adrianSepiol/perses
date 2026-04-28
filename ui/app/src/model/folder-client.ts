@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { fetchJson, FolderResource, StatusError } from '@perses-dev/core';
+import { fetch, fetchJson, FolderResource, StatusError } from '@perses-dev/core';
 import {
   useMutation,
   UseMutationResult,
