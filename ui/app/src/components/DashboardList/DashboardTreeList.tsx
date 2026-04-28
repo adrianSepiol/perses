@@ -73,7 +73,7 @@ function DashboardTreeList({
   );
   const [height, setHeight] = useState(getTableHeight());
   useEffect(() => {
-    const handleResize = (): void => setHeight(getTableHeight);
+    const handleResize = (): void => setHeight(() => getTableHeight());
     window.addEventListener('resize', handleResize);
     return (): void => window.removeEventListener('resize', handleResize);
   }, [getTableHeight]);
