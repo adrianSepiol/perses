@@ -23,7 +23,6 @@ import FolderOutlineIcon from 'mdi-material-ui/FolderOutline';
 import ViewDashboardOutlineIcon from 'mdi-material-ui/ViewDashboardOutline';
 import AddFolderOutlineIcon from 'mdi-material-ui/FolderPlusOutline';
 import { ReactElement, ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
-import { max } from 'lodash';
 import { CRUDIconButton } from '../CRUDButton/CRUDIconButton';
 import { buildTableRows, formatAbsoluteTime, formatRelativeTime } from '../../utils/dashboardTableUtils';
 import { useIsMobileSize } from '../../utils/browser-size';
@@ -68,7 +67,7 @@ function DashboardTreeList({
 }: DashboardTreeTableProps): ReactElement {
   const isMobileSize = useIsMobileSize();
   const getTableHeight = useCallback(
-    () => (isMobileSize ? 500 : (max([window.innerHeight - 350, 300]) ?? 300)),
+    () => (isMobileSize ? 500 : (Math.max(window.innerHeight - 350, 300) ?? 300)),
     [isMobileSize]
   );
   const [height, setHeight] = useState(getTableHeight());
