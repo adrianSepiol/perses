@@ -89,3 +89,48 @@ func TestUnmarshalFolderError(t *testing.T) {
 		})
 	}
 }
+
+func TestUnmarshalFolderSuccess(t *testing.T) {
+	testSuite := []struct {
+		title string
+		jason string
+	}{
+		{
+			title: "empty folder is allowed",
+			jason: `
+{
+  "kind": "Folder",
+  "metadata": {
+    "name": "test",
+    "project": "perses"
+  },
+  "spec": []
+}
+`,
+		},
+		{
+			title: "folder with empty sub-folder is allowed",
+			jason: `
+{
+  "kind": "Folder",
+  "metadata": {
+    "name": "test",
+    "project": "perses"
+  },
+  "spec": [
+    {
+      "kind": "Folder",
+      "name": "emptySubFolder"
+    }
+  ]
+}
+`,
+		},
+	}
+	for _, test := range testSuite {
+		t.Run(test.title, func(t *testing.T) {
+			result := Folder{}
+			assert.NoError(t, json.Unmarshal([]byte(test.jason), &result))
+		})
+	}
+}
