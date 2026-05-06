@@ -635,7 +635,7 @@ describe('sortDashboardTableStringColumn', () => {
   describe('field: displayName – ascending (isDesc = false)', () => {
     it('places Folder before Dashboard', () => {
       expect(
-        sortDashboardTableStringColumn(row('Folder', 'a'), row('Dashboard', 'a'), 'displayName', false)
+        sortDashboardTableStringColumn(row('Folder', 'ab'), row('Dashboard', 'ab'), 'displayName', false)
       ).toBeLessThan(0);
     });
 
