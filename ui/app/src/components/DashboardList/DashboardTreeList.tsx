@@ -24,7 +24,13 @@ import ViewDashboardOutlineIcon from 'mdi-material-ui/ViewDashboardOutline';
 import AddFolderOutlineIcon from 'mdi-material-ui/FolderPlusOutline';
 import { ReactElement, ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
 import { CRUDIconButton } from '../CRUDButton/CRUDIconButton';
-import { buildTableRows, formatAbsoluteTime, formatRelativeTime } from '../../utils/dashboardTableUtils';
+import {
+  buildTableRows,
+  formatAbsoluteTime,
+  formatRelativeTime,
+  RowWithOriginal,
+  sortDashboardTableStringColumn,
+} from '../../utils/dashboardTableUtils';
 import { useIsMobileSize } from '../../utils/browser-size';
 import { DashboardListRow } from './DashboardList';
 
@@ -81,6 +87,22 @@ function DashboardTreeList({
     return buildTableRows(folderList, dashboardsMap);
   }, [folderList, dashboardsMap]);
 
+  const [sorting, setSorting] = useState([{ id: 'name', desc: false }]);
+  const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
+
+  const sortStringColumn = useCallback(
+    (accessorKey: 'project' | 'displayName') =>
+      (
+        rowA: RowWithOriginal<DashboardTreeTableRow>,
+        rowB: RowWithOriginal<DashboardTreeTableRow>,
+        columnId: string
+      ): number => {
+        const isDesc = sorting.find((s) => s.id === columnId)?.desc ?? false;
+        return sortDashboardTableStringColumn(rowA, rowB, accessorKey, isDesc);
+      },
+    [sorting]
+  );
+
   const columns = useMemo<Array<TableColumnConfig<DashboardTreeTableRow>>>(
     () => [
       {
@@ -90,6 +112,7 @@ function DashboardTreeList({
         align: 'left',
         enableSorting: true,
         width: 150,
+        sortingFn: sortStringColumn('project'),
       },
       {
         id: 'name',
@@ -101,6 +124,7 @@ function DashboardTreeList({
         enableHiding: false,
         width: 300,
         cellDescription: (): string => '',
+        sortingFn: sortStringColumn('displayName'),
         cell: ({ row, getValue }): ReactElement => {
           const value = getValue() as string;
           const kind = row.original.kind;
@@ -272,11 +296,9 @@ function DashboardTreeList({
       handleDuplicateButtonClick,
       handleEditFolderButtonClick,
       handleRenameButtonClick,
+      sortStringColumn,
     ]
   );
-
-  const [sorting, setSorting] = useState([{ id: 'name', desc: false }]);
-  const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
 
   if (isLoading) {
     return (

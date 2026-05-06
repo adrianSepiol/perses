@@ -12,8 +12,9 @@
 // limitations under the License.
 
 import { FolderResource } from '@perses-dev/core';
+import { DashboardTreeTableRow } from '../components/DashboardList/DashboardTreeList';
 import { DashboardListRow } from '../components/DashboardList/DashboardList';
-import { buildTableRows } from './dashboardTableUtils';
+import { buildTableRows, sortDashboardTableStringColumn } from './dashboardTableUtils';
 
 describe('buildTableRows – no folders', () => {
   it('returns an empty array when both inputs are empty', () => {
@@ -619,5 +620,105 @@ describe('buildTableRows – idempotency', () => {
     // The original object must not have been mutated (no inFolder property)
     expect(map.get('p')?.get('dash-a')).toEqual(dash);
     expect(map.get('p')?.get('dash-a')?.inFolder).toBeUndefined();
+  });
+});
+
+const row = (
+  kind: DashboardTreeTableRow['kind'],
+  displayName: string,
+  project = 'p'
+): { original: DashboardTreeTableRow } => ({
+  original: { kind, displayName, project, name: displayName.toLowerCase(), path: [] },
+});
+
+describe('sortDashboardTableStringColumn', () => {
+  describe('field: displayName – ascending (isDesc = false)', () => {
+    it('places Folder before Dashboard', () => {
+      expect(
+        sortDashboardTableStringColumn(row('Folder', 'a'), row('Dashboard', 'a'), 'displayName', false)
+      ).toBeLessThan(0);
+    });
+
+    it('places Dashboard after Folder', () => {
+      expect(
+        sortDashboardTableStringColumn(row('Dashboard', 'a'), row('Folder', 'a'), 'displayName', false)
+      ).toBeGreaterThan(0);
+    });
+
+    it('sorts two Folders alphabetically', () => {
+      expect(
+        sortDashboardTableStringColumn(row('Folder', 'Alpha'), row('Folder', 'Beta'), 'displayName', false)
+      ).toBeLessThan(0);
+      expect(
+        sortDashboardTableStringColumn(row('Folder', 'Beta'), row('Folder', 'Alpha'), 'displayName', false)
+      ).toBeGreaterThan(0);
+    });
+
+    it('sorts two Dashboards alphabetically', () => {
+      expect(
+        sortDashboardTableStringColumn(row('Dashboard', 'Alpha'), row('Dashboard', 'Beta'), 'displayName', false)
+      ).toBeLessThan(0);
+      expect(
+        sortDashboardTableStringColumn(row('Dashboard', 'Beta'), row('Dashboard', 'Alpha'), 'displayName', false)
+      ).toBeGreaterThan(0);
+    });
+
+    it('returns 0 for same kind and same displayName', () => {
+      expect(
+        sortDashboardTableStringColumn(row('Dashboard', 'Same'), row('Dashboard', 'Same'), 'displayName', false)
+      ).toBe(0);
+      expect(sortDashboardTableStringColumn(row('Folder', 'Same'), row('Folder', 'Same'), 'displayName', false)).toBe(
+        0
+      );
+    });
+  });
+
+  describe('field: displayName – descending (isDesc = true)', () => {
+    it('returns a positive value for Folder vs Dashboard (folder on top)', () => {
+      expect(
+        sortDashboardTableStringColumn(row('Folder', 'a'), row('Dashboard', 'a'), 'displayName', true)
+      ).toBeGreaterThan(0);
+    });
+
+    it('returns a negative value for Dashboard vs Folder (folder on top)', () => {
+      expect(
+        sortDashboardTableStringColumn(row('Dashboard', 'a'), row('Folder', 'a'), 'displayName', true)
+      ).toBeLessThan(0);
+    });
+
+    it('sorts two Folders alphabetically', () => {
+      expect(
+        sortDashboardTableStringColumn(row('Folder', 'Alpha'), row('Folder', 'Beta'), 'displayName', true)
+      ).toBeLessThan(0);
+    });
+
+    it('sorts two Dashboards alphabetically', () => {
+      expect(
+        sortDashboardTableStringColumn(row('Dashboard', 'Alpha'), row('Dashboard', 'Beta'), 'displayName', true)
+      ).toBeLessThan(0);
+    });
+  });
+
+  describe('field: project', () => {
+    it('places Folder before Dashboard regardless of project name', () => {
+      expect(
+        sortDashboardTableStringColumn(row('Folder', 'x', 'proj-a'), row('Dashboard', 'x', 'proj-b'), 'project', false)
+      ).toBeLessThan(0);
+    });
+
+    it('sorts two rows of the same kind by project alphabetically', () => {
+      expect(
+        sortDashboardTableStringColumn(row('Dashboard', 'x', 'alpha'), row('Dashboard', 'x', 'beta'), 'project', false)
+      ).toBeLessThan(0);
+      expect(
+        sortDashboardTableStringColumn(row('Dashboard', 'x', 'beta'), row('Dashboard', 'x', 'alpha'), 'project', false)
+      ).toBeGreaterThan(0);
+    });
+
+    it('keeps folders on top when descending by project', () => {
+      expect(
+        sortDashboardTableStringColumn(row('Folder', 'x', 'proj-a'), row('Dashboard', 'x', 'proj-b'), 'project', true)
+      ).toBeGreaterThan(0);
+    });
   });
 });

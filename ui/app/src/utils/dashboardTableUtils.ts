@@ -16,6 +16,30 @@ import { intlFormatDistance } from 'date-fns';
 import type { DashboardTreeTableRow } from '../components/DashboardList/DashboardTreeList';
 import { DashboardListRow } from '../components/DashboardList/DashboardList';
 
+export interface RowWithOriginal<TData> {
+  original: TData;
+}
+
+/**
+ * Sorting function for string columns of the dashboard tree table.
+ *
+ * Folders are always sorted before dashboards regardless of sort direction.
+ */
+export function sortDashboardTableStringColumn(
+  rowA: RowWithOriginal<DashboardTreeTableRow>,
+  rowB: RowWithOriginal<DashboardTreeTableRow>,
+  field: 'displayName' | 'project',
+  isDesc: boolean
+): number {
+  const a = rowA.original;
+  const b = rowB.original;
+  const kindOrder = compareFolderFirst(a.kind, b.kind, isDesc);
+  if (kindOrder !== 0) {
+    return kindOrder;
+  }
+  return a[field].localeCompare(b[field]);
+}
+
 /**
  * Formats a date as a human-readable relative time string (e.g. "2 hours ago").
  * Returns `null` if no date is provided.
@@ -138,9 +162,16 @@ const mapFolderSpecToTableRow = (
           throw new Error(`Unknown kind: ${item.kind}`);
       }
     })
-    .filter((row): row is DashboardTreeTableRow => row !== undefined);
+    .filter((row): row is DashboardTreeTableRow => row !== undefined)
+    .sort((a, b) => compareFolderFirst(a.kind, b.kind));
 };
 
 const buildPath = (parentPath: string[], name: string): string[] => {
   return [...parentPath, name];
 };
+
+function compareFolderFirst(kindA: string, kindB: string, isDesc = false): number {
+  if (kindA === kindB) return 0;
+  const folderFirst = kindA === 'Folder' ? -1 : 1;
+  return isDesc ? -folderFirst : folderFirst;
+}
