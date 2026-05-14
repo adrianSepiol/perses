@@ -35,4 +35,5 @@ export interface GridItemDefinition {
   width: number;
   height: number;
   content: PanelRef;
+  repeatVariable?: string;
 }

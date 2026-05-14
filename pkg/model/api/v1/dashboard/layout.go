@@ -72,11 +72,12 @@ func (k *LayoutKind) validate() error {
 // GridItem
 // DEPRECATED: this is replaced by the struct github.com/perses/spec/go/dashboard.GridItem
 type GridItem struct {
-	X       int             `json:"x" yaml:"x"`
-	Y       int             `json:"y" yaml:"y"`
-	Width   int             `json:"width" yaml:"width"`
-	Height  int             `json:"height" yaml:"height"`
-	Content *common.JSONRef `json:"content" yaml:"content"`
+	X              int             `json:"x" yaml:"x"`
+	Y              int             `json:"y" yaml:"y"`
+	Width          int             `json:"width" yaml:"width"`
+	Height         int             `json:"height" yaml:"height"`
+	Content        *common.JSONRef `json:"content" yaml:"content"`
+	RepeatVariable string          `json:"repeatVariable,omitempty" yaml:"repeatVariable,omitempty"`
 }
 
 // GridLayoutCollapse

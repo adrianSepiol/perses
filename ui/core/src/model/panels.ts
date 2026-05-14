@@ -53,4 +53,5 @@ export type PanelGroupId = number;
 export interface PanelEditorValues {
   groupId: PanelGroupId;
   panelDefinition: PanelDefinition;
+  repeatVariable?: string;
 }
