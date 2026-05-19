@@ -25,6 +25,7 @@ export interface Link {
 export interface PanelDisplay {
   name?: string;
   description?: string;
+  repeatVariable?: string;
 }
 
 export interface PanelDefinition<PluginSpec = UnknownSpec> extends Definition<PanelSpec<PluginSpec>> {
@@ -53,5 +54,4 @@ export type PanelGroupId = number;
 export interface PanelEditorValues {
   groupId: PanelGroupId;
   panelDefinition: PanelDefinition;
-  repeatVariable?: string;
 }
