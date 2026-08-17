@@ -41,12 +41,13 @@ const (
 	KindQuery           Kind = "Query"
 	KindAlertsQuery     Kind = "AlertsQuery"
 	KindSilencesQuery   Kind = "SilencesQuery"
+	KindJsonQuery       Kind = "JsonQuery"
 	KindExplore         Kind = "Explore"
 	KindAnnotation      Kind = "Annotation"
 )
 
 func (k Kind) IsQuery() bool {
-	return k == KindTimeSeriesQuery || k == KindTraceQuery || k == KindProfileQuery || k == KindLogQuery || k == KindAlertsQuery || k == KindSilencesQuery
+	return k == KindTimeSeriesQuery || k == KindTraceQuery || k == KindProfileQuery || k == KindLogQuery || k == KindAlertsQuery || k == KindSilencesQuery || k == KindJsonQuery
 }
 
 // Deprecated. Use github.com/perses/spec/go/module/module.PluginSpec instead
