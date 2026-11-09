@@ -68,6 +68,13 @@ func (t *TimeRange) Verify() error {
 	return nil
 }
 
+func (f *Frontend) Verify() error {
+	if f.RepeatVariableMaxValues < 0 {
+		return fmt.Errorf("frontend.repeat_variable_max_values must be >= 0, got %d", f.RepeatVariableMaxValues)
+	}
+	return nil
+}
+
 type Frontend struct {
 	// When it is true, Perses won't serve the frontend anymore, and any other config set here will be ignored
 	Disable bool `json:"disable" yaml:"disable"`

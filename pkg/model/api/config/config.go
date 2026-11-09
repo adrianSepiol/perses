@@ -102,7 +102,7 @@ func (c *Config) Verify() error {
 	// Since a project variable can either depend on a global datasource or a project datasource,
 	// we need to disable the project variable if the global datasource is disabled and the project datasource is disabled.
 	c.Variable.Project.Disable = c.Variable.Project.Disable || (c.Datasource.Global.Disable && c.Datasource.Project.Disable)
-	return nil
+	return c.Frontend.Verify()
 }
 
 func Resolve(configFile string) (Config, error) {
